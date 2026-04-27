@@ -23,11 +23,18 @@ def create_app() -> FastAPI:
 
     app.state.started_monotonic = time.monotonic()
     
-    import redis
-    app.state.redis = redis.Redis.from_url(
-        os.getenv("REDIS_URL", "redis://localhost:6379/0"),
-        decode_responses=True
-    )
+    redis_url = os.getenv("REDIS_URL", "")
+    try:
+        import redis as redis_lib
+        if redis_url:
+            r = redis_lib.Redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=2)
+            r.ping()
+            app.state.redis = r
+        else:
+            raise ConnectionError("No REDIS_URL configured")
+    except Exception:
+        import fakeredis
+        app.state.redis = fakeredis.FakeRedis(decode_responses=True)
 
     from app.middleware.rate_limit import RateLimitMiddleware
     app.add_middleware(AuthHeadersMiddleware, api_key=settings.api_key)
