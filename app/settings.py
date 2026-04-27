@@ -12,6 +12,7 @@ class Settings:
     active_workers: int
     rabbitmq_url: str
     database_url: str
+    docs_enabled: bool
 
 
 def _env_int(name: str, default_value: int) -> int:
@@ -20,6 +21,11 @@ def _env_int(name: str, default_value: int) -> int:
         return int(value)
     except ValueError:
         return default_value
+
+
+def _env_bool(name: str, default_value: bool) -> bool:
+    value = os.getenv(name, str(default_value)).lower()
+    return value in ("true", "1", "yes")
 
 
 def _normalize_db_url(url: str) -> str:
@@ -45,6 +51,7 @@ def load_settings() -> Settings:
         active_workers=_env_int("ACTIVE_WORKERS", 4),
         rabbitmq_url=os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
         database_url=db_url,
+        docs_enabled=_env_bool("DOCS_ENABLED", True),
     )
 
 

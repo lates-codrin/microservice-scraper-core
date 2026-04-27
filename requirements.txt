@@ -31,3 +31,5 @@ alembic>=1.13.0,<2.0.0
 greenlet>=3.0.0,<4.0.0
 schemathesis>=3.38.0,<4.0.0
 pytest-asyncio>=0.23.0,<2.0.0
+scalar-rs>=0.1.0,<1.0.0
+openapi-spec-validator>=0.7.0,<1.0.0
