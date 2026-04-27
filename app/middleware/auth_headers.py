@@ -1,0 +1,105 @@
+from __future__ import annotations
+
+from typing import Any
+from uuid import UUID, uuid4
+
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+from app.models.common import ErrorEnvelope, ErrorPayload
+
+
+class AuthHeadersMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app: Any, api_key: str) -> None:
+        super().__init__(app)
+        self.api_key = api_key
+
+    def _error_response(
+        self,
+        *,
+        status_code: int,
+        code: str,
+        message: str,
+        request_id: str,
+        details: dict[str, Any] | None = None,
+    ) -> JSONResponse:
+        payload = ErrorEnvelope(
+            error=ErrorPayload(
+                code=code,
+                message=message,
+                request_id=request_id,
+                details=details or {},
+            )
+        )
+        return JSONResponse(
+            status_code=status_code,
+            content=payload.model_dump(mode="json"),
+            headers={"X-Request-ID": request_id},
+        )
+
+    async def dispatch(self, request: Request, call_next: Any) -> JSONResponse:
+        incoming_request_id = request.headers.get("X-Request-ID")
+        response_request_id = incoming_request_id or str(uuid4())
+
+        authorization = request.headers.get("Authorization")
+        tenant_id = request.headers.get("X-Tenant-ID")
+
+        if not authorization or not authorization.startswith("Bearer "):
+            return self._error_response(
+                status_code=401,
+                code="unauthorized",
+                message="Authorization header must use Bearer token.",
+                request_id=response_request_id,
+            )
+
+        token = authorization.replace("Bearer ", "", 1).strip()
+        if not token:
+            return self._error_response(
+                status_code=401,
+                code="unauthorized",
+                message="Authorization Bearer token is missing.",
+                request_id=response_request_id,
+            )
+
+        if self.api_key and token != self.api_key:
+            return self._error_response(
+                status_code=401,
+                code="unauthorized",
+                message="API key is invalid.",
+                request_id=response_request_id,
+            )
+
+        if incoming_request_id is None:
+            return self._error_response(
+                status_code=400,
+                code="invalid_request",
+                message="X-Request-ID header is required.",
+                request_id=response_request_id,
+            )
+
+        try:
+            UUID(incoming_request_id)
+        except ValueError:
+            return self._error_response(
+                status_code=400,
+                code="invalid_request",
+                message="X-Request-ID must be a valid UUID.",
+                request_id=response_request_id,
+                details={"header": "X-Request-ID"},
+            )
+
+        if not tenant_id or not tenant_id.strip():
+            return self._error_response(
+                status_code=403,
+                code="forbidden",
+                message="X-Tenant-ID header is required.",
+                request_id=incoming_request_id,
+            )
+
+        request.state.request_id = incoming_request_id
+        request.state.tenant_id = tenant_id.strip()
+
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = incoming_request_id
+        return response

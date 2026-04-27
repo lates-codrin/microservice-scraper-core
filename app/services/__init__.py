@@ -1,0 +1,1 @@
+"""Service layer for in-memory storage and file loading."""

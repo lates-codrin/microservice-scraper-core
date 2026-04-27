@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "create-tasks",
+  "owner": "sequenzia",
+  "repo": "agent-alchemy",
+  "path": "claude/sdd-tools/skills/create-tasks",
+  "branch": "main",
+  "sha": "9e7858d37dedc2fb474531bbfb06128f984fcbda",
+  "source": "manual"
+}

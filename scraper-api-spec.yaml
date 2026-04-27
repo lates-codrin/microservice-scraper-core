@@ -1,0 +1,873 @@
+openapi: 3.0.3
+info:
+  title: Lex-Advisor Scraper Service API
+  version: 1.0.0
+  description: |
+    HTTP contract between the Lex-Advisor platform (caller) and any external
+    Scraper service (provider). Scraper discovers, fetches, and normalizes
+    documents from Romanian cityhall (primărie) websites so they can be
+    indexed by the RAG layer.
+
+    Any implementation — commercial vendor (Firecrawl, Apify, Zyte, Bright
+    Data), OSS fork, per-site Romanian freelancer build — that conforms
+    to this spec is a drop-in replacement.
+
+    Companion docs:
+      - docs/external/scraper-api-spec.md (full narrative spec)
+  contact:
+    name: Lex-Advisor Platform Team
+    email: costin@citydock.ro
+  license:
+    name: Apache-2.0
+
+servers:
+  - url: https://scraper.partner.example/api
+    description: Partner production (replace with your deployment)
+  - url: http://localhost:8080
+    description: Local development
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: scrape
+    description: Single-URL scrape (sync or async)
+  - name: crawl
+    description: Multi-page site crawl
+  - name: job
+    description: Job lifecycle (status, documents, cancel, delete)
+  - name: classify
+    description: Standalone classification
+  - name: extract
+    description: Structured field extraction
+  - name: health
+    description: Liveness
+
+paths:
+  /v1/scrape:
+    post:
+      tags: [scrape]
+      summary: Single-URL scrape (sync or async)
+      description: |
+        For one-off fetches (e.g. admin "test this URL" button, re-ingesting
+        a single document). Sync mode returns ≤ timeout_ms; async returns
+        job_id.
+      operationId: scrape
+      parameters:
+        - $ref: '#/components/parameters/XRequestID'
+        - $ref: '#/components/parameters/XTenantID'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScrapeRequest'
+            example:
+              url: "https://primaria-exemplu.ro/hcl/hcl-125-2024"
+              render_javascript: "auto"
+              follow_redirects: true
+              include_raw_html: false
+              classify: true
+              extract_structured: false
+              timeout_ms: 30000
+              mode: "sync"
+      responses:
+        '200':
+          description: Sync scrape successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrapeResponse'
+        '202':
+          description: Async scrape queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [job_id, status]
+                properties:
+                  job_id: { type: string }
+                  status: { type: string, example: "queued" }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '451':
+          description: Target site legally blocks bots / WAF
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '502': { $ref: '#/components/responses/UpstreamError' }
+        '504': { $ref: '#/components/responses/Timeout' }
+
+  /v1/crawl:
+    post:
+      tags: [crawl]
+      summary: Start a site crawl
+      description: |
+        Crawls from seed URLs up to max_depth, honoring robots.txt + rate
+        limits. Supports incremental crawl via since / previous_job_id /
+        known_content_hashes.
+      operationId: crawl
+      parameters:
+        - $ref: '#/components/parameters/XRequestID'
+        - $ref: '#/components/parameters/XTenantID'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrawlRequest'
+      responses:
+        '202':
+          description: Crawl queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [job_id, status, submitted_at]
+                properties:
+                  job_id: { type: string }
+                  status: { type: string, example: "queued" }
+                  submitted_at: { type: string, format: date-time }
+                  estimated_completion_at: { type: string, format: date-time, nullable: true }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /v1/jobs/{job_id}:
+    get:
+      tags: [job]
+      summary: Poll job status
+      operationId: getJob
+      parameters:
+        - $ref: '#/components/parameters/XTenantID'
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Current job state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrawlJob'
+          headers:
+            Retry-After:
+              schema: { type: integer }
+              description: Seconds to wait before next poll (non-terminal status)
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+    delete:
+      tags: [job]
+      summary: Purge job data (GDPR)
+      description: Removes all extracted documents + metadata for this job. SLA ≤ 24h.
+      operationId: deleteJob
+      parameters:
+        - $ref: '#/components/parameters/XTenantID'
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Job data purged
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/jobs/{job_id}/documents:
+    get:
+      tags: [job]
+      summary: Fetch extracted documents (paginated)
+      operationId: getJobDocuments
+      parameters:
+        - $ref: '#/components/parameters/XTenantID'
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: cursor
+          in: query
+          schema: { type: string, nullable: true }
+          description: Opaque pagination token
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100, minimum: 1, maximum: 500 }
+        - name: doc_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/DocType'
+          description: Filter by classification
+        - name: min_confidence
+          in: query
+          schema: { type: number, format: float, default: 0.0, minimum: 0.0, maximum: 1.0 }
+        - name: changed_only
+          in: query
+          schema: { type: boolean, default: false }
+          description: On incremental crawls, only new/changed vs baseline
+      responses:
+        '200':
+          description: Page of documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPage'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '410':
+          description: Documents retention expired (≥ 30 days post-completion)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /v1/jobs/{job_id}/cancel:
+    post:
+      tags: [job]
+      summary: Cancel a running job
+      description: Documents extracted before cancel stay retrievable.
+      operationId: cancelJob
+      parameters:
+        - $ref: '#/components/parameters/XTenantID'
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Job cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [job_id, status]
+                properties:
+                  job_id: { type: string }
+                  status: { type: string, example: "cancelled" }
+                  documents_salvaged: { type: integer, minimum: 0 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /v1/classify:
+    post:
+      tags: [classify]
+      summary: Standalone classification
+      description: For reclassifying existing documents without re-fetching.
+      operationId: classify
+      parameters:
+        - $ref: '#/components/parameters/XRequestID'
+        - $ref: '#/components/parameters/XTenantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifyRequest'
+      responses:
+        '200':
+          description: Classification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifyResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /v1/extract:
+    post:
+      tags: [extract]
+      summary: Structured field extraction (optional endpoint)
+      description: |
+        For documents where caller wants structured fields (HCL number,
+        adoption date, votes). Optional — if provider doesn't implement,
+        caller uses its own Gemini-based extractor.
+      operationId: extract
+      parameters:
+        - $ref: '#/components/parameters/XRequestID'
+        - $ref: '#/components/parameters/XTenantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractRequest'
+      responses:
+        '200':
+          description: Extraction result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '501':
+          description: Endpoint not implemented by this provider
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /v1/health:
+    get:
+      tags: [health]
+      summary: Liveness + dependencies
+      operationId: health
+      security: []
+      responses:
+        '200':
+          description: Service ok or degraded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: Service down
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Static, per-tenant API key (≥ 256-bit entropy).
+
+  parameters:
+    XRequestID:
+      name: X-Request-ID
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+    XTenantID:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      schema: { type: string }
+      description: Caller's cityhall slug.
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+
+  schemas:
+
+    # ---- Enums ----
+    DocType:
+      type: string
+      description: |
+        Romanian municipal document taxonomy. Provider MUST classify into
+        one of these values; unknown → "other".
+      enum:
+        - hcl                        # Hotărâre Consiliu Local
+        - dispozitie_primar
+        - act_normativ_local
+        - proiect_hotarare
+        - regulament
+        - buget
+        - raport_executie_bugetara
+        - pug                        # Plan Urbanistic General
+        - puz                        # Plan Urbanistic Zonal
+        - strategie
+        - organigrama
+        - raport_activitate
+        - proces_verbal
+        - consultare_publica
+        - anunt_public
+        - anunt_achizitie
+        - declaratie_avere
+        - other
+
+    ContentType:
+      type: string
+      enum: [html, pdf, docx, xlsx, image, other]
+
+    CrawlStatus:
+      type: string
+      enum:
+        - queued
+        - fetching_sitemap
+        - crawling
+        - extracting
+        - classifying
+        - done
+        - failed
+        - cancelled
+        - partial
+
+    RenderMode:
+      type: string
+      enum: [always, never, auto]
+
+    # ---- Common ----
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code:
+              type: string
+              enum:
+                - invalid_request
+                - invalid_seed_url
+                - not_implemented
+                - unauthorized
+                - forbidden
+                - robots_disallowed
+                - not_found
+                - duplicate_job
+                - payload_too_large
+                - unsupported_media_type
+                - validation_error
+                - rate_limited
+                - site_blocked
+                - internal_error
+                - upstream_error
+                - service_unavailable
+                - timeout
+            message: { type: string }
+            request_id: { type: string, format: uuid }
+            details:
+              type: object
+              additionalProperties: true
+
+    # ---- Scrape ----
+    ScrapeRequest:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, format: uri }
+        render_javascript:
+          $ref: '#/components/schemas/RenderMode'
+        follow_redirects:
+          type: boolean
+          default: true
+        include_raw_html:
+          type: boolean
+          default: false
+        classify:
+          type: boolean
+          default: true
+        extract_structured:
+          type: boolean
+          default: false
+        timeout_ms:
+          type: integer
+          default: 30000
+          minimum: 1000
+          maximum: 120000
+        mode:
+          type: string
+          enum: [sync, async]
+          default: sync
+
+    ScrapeResponse:
+      type: object
+      required: [request_id, document, latency_ms]
+      properties:
+        request_id: { type: string, format: uuid }
+        document:
+          $ref: '#/components/schemas/ScrapedDocument'
+        latency_ms: { type: integer, minimum: 0 }
+
+    # ---- Crawl ----
+    CrawlAuth:
+      type: object
+      nullable: true
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [basic, cookie, form]
+        credentials:
+          type: object
+          additionalProperties: true
+
+    CrawlConfig:
+      type: object
+      required: [seed_urls, allowed_domains]
+      properties:
+        seed_urls:
+          type: array
+          items: { type: string, format: uri }
+          minItems: 1
+          maxItems: 20
+        allowed_domains:
+          type: array
+          items: { type: string }
+        max_depth:
+          type: integer
+          default: 5
+          minimum: 1
+          maximum: 20
+        max_pages:
+          type: integer
+          default: 2000
+          minimum: 1
+          maximum: 100000
+        include_patterns:
+          type: array
+          items: { type: string }
+          description: URL regex — if any match, page is in-scope.
+        exclude_patterns:
+          type: array
+          items: { type: string }
+        doc_types_wanted:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocType'
+        respect_robots_txt:
+          type: boolean
+          default: true
+        max_requests_per_second:
+          type: number
+          format: float
+          default: 1.0
+          minimum: 0.1
+          maximum: 10.0
+        user_agent:
+          type: string
+          nullable: true
+        follow_pdfs:
+          type: boolean
+          default: true
+        max_pdf_size_mb:
+          type: integer
+          default: 50
+          minimum: 1
+        render_javascript:
+          $ref: '#/components/schemas/RenderMode'
+        sitemap_hint_url:
+          type: string
+          format: uri
+          nullable: true
+        auth:
+          $ref: '#/components/schemas/CrawlAuth'
+
+    IncrementalOptions:
+      type: object
+      properties:
+        since:
+          type: string
+          format: date-time
+          description: Only pages modified after this timestamp (if Last-Modified known).
+        previous_job_id:
+          type: string
+          description: Provider looks up baseline + diffs.
+        known_content_hashes:
+          type: array
+          items: { type: string }
+          description: Provider skips documents whose content_hash matches.
+
+    CrawlRequest:
+      type: object
+      required: [config]
+      properties:
+        config:
+          $ref: '#/components/schemas/CrawlConfig'
+        incremental:
+          $ref: '#/components/schemas/IncrementalOptions'
+        callback_url:
+          type: string
+          format: uri
+          nullable: true
+          description: HMAC-signed POST on crawl.completed.
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+
+    CrawlProgress:
+      type: object
+      required: [stage, urls_discovered, urls_fetched, documents_extracted, documents_classified, urls_pending, bytes_downloaded]
+      properties:
+        stage:
+          type: string
+        urls_discovered: { type: integer, minimum: 0 }
+        urls_fetched: { type: integer, minimum: 0 }
+        documents_extracted: { type: integer, minimum: 0 }
+        documents_classified: { type: integer, minimum: 0 }
+        urls_pending: { type: integer, minimum: 0 }
+        bytes_downloaded: { type: integer, minimum: 0 }
+
+    CrawlStats:
+      type: object
+      properties:
+        by_doc_type:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+        http_errors:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+
+    CrawlJob:
+      type: object
+      required: [job_id, tenant_id, status, submitted_at]
+      properties:
+        job_id: { type: string }
+        tenant_id: { type: string }
+        status:
+          $ref: '#/components/schemas/CrawlStatus'
+        progress:
+          $ref: '#/components/schemas/CrawlProgress'
+        stats:
+          $ref: '#/components/schemas/CrawlStats'
+        config:
+          $ref: '#/components/schemas/CrawlConfig'
+        submitted_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time, nullable: true }
+        estimated_completion_at: { type: string, format: date-time, nullable: true }
+        completed_at: { type: string, format: date-time, nullable: true }
+        error:
+          type: object
+          nullable: true
+
+    # ---- Documents ----
+    ScrapedDocument:
+      type: object
+      required:
+        - document_id
+        - source_url
+        - mime_type
+        - content_type
+        - raw_text
+        - doc_type
+        - doc_type_confidence
+        - language
+        - content_length
+        - content_hash
+        - metadata
+        - extraction_confidence
+      properties:
+        document_id: { type: string }
+        source_url: { type: string, format: uri }
+        canonical_url: { type: string, format: uri, nullable: true }
+        mime_type: { type: string }
+        content_type:
+          $ref: '#/components/schemas/ContentType'
+        raw_text:
+          type: string
+          description: Cleaned text, Romanian diacritics preserved, no HTML/boilerplate.
+        raw_html:
+          type: string
+          nullable: true
+        binary_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Pre-signed URL to original file, ≥ 30 days retention.
+        doc_type:
+          $ref: '#/components/schemas/DocType'
+        doc_type_confidence:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+        title: { type: string, nullable: true }
+        language:
+          type: string
+          example: ro
+        published_at:
+          type: string
+          format: date
+          nullable: true
+        page_count:
+          type: integer
+          nullable: true
+          minimum: 1
+        content_length: { type: integer, minimum: 0 }
+        content_hash:
+          type: string
+          description: SHA-256 of raw_text for delta detection.
+        metadata:
+          type: object
+          additionalProperties: true
+        extraction_confidence:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+        warnings:
+          type: array
+          items: { type: string }
+
+    DocumentPage:
+      type: object
+      required: [documents, has_more]
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScrapedDocument'
+        next_cursor: { type: string, nullable: true }
+        has_more: { type: boolean }
+        total_available: { type: integer, minimum: 0 }
+
+    # ---- Classify ----
+    ClassifyRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string }
+        url_hint: { type: string, format: uri, nullable: true }
+        title_hint: { type: string, nullable: true }
+
+    ClassifyAlternative:
+      type: object
+      required: [doc_type, confidence]
+      properties:
+        doc_type:
+          $ref: '#/components/schemas/DocType'
+        confidence:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+
+    ClassifyResponse:
+      type: object
+      required: [doc_type, doc_type_confidence, language]
+      properties:
+        doc_type:
+          $ref: '#/components/schemas/DocType'
+        doc_type_confidence:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+        language: { type: string, example: ro }
+        alternatives:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassifyAlternative'
+
+    # ---- Extract ----
+    ExtractRequest:
+      type: object
+      required: [content, doc_type, schema]
+      properties:
+        content: { type: string }
+        doc_type:
+          $ref: '#/components/schemas/DocType'
+        schema:
+          type: object
+          description: JSON Schema fragment describing fields to extract.
+          additionalProperties: true
+
+    ExtractResponse:
+      type: object
+      required: [fields]
+      properties:
+        fields:
+          type: object
+          additionalProperties: true
+        field_confidence:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+            minimum: 0.0
+            maximum: 1.0
+        missing_fields:
+          type: array
+          items: { type: string }
+
+    # ---- Health ----
+    HealthStatus:
+      type: object
+      required: [status, version, uptime_seconds]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, down]
+        version: { type: string }
+        uptime_seconds: { type: integer, minimum: 0 }
+        queue_depth: { type: integer, minimum: 0 }
+        active_workers: { type: integer, minimum: 0 }
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [ok, degraded, down]
+
+  responses:
+    BadRequest:
+      description: Malformed request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Missing/invalid API key
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Tenant mismatch
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    PayloadTooLarge:
+      description: Body too big
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UnsupportedMediaType:
+      description: MIME not in allowlist
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Semantically invalid
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: Too many requests
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    InternalError:
+      description: Provider-side error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UpstreamError:
+      description: Target site unreachable
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Timeout:
+      description: Upstream timeout
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
