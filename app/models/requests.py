@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, StrictBool
 
 from app.models.enums import DocType, RenderMode
 
@@ -10,10 +10,10 @@ from app.models.enums import DocType, RenderMode
 class ScrapeRequest(BaseModel):
     url: HttpUrl
     render_javascript: RenderMode = RenderMode.auto
-    follow_redirects: bool = True
-    include_raw_html: bool = False
-    classify: bool = True
-    extract_structured: bool = False
+    follow_redirects: StrictBool = True
+    include_raw_html: StrictBool = False
+    classify: StrictBool = True
+    extract_structured: StrictBool = False
     timeout_ms: int = Field(default=30000, ge=1000, le=120000)
     mode: Literal["sync", "async"] = "sync"
 

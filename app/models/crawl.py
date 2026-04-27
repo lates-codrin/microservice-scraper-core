@@ -1,15 +1,51 @@
 from __future__ import annotations
 
+import ipaddress
+import socket
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
+from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, StrictBool, StrictStr, field_validator
 
 from app.models.enums import CrawlStatus, DocType, RenderMode
 
+_PRIVATE_NETS = [
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+]
+
+
+def _is_ssrf_url(url: str) -> bool:
+    """Return True if *url* resolves to a private/loopback/link-local address."""
+    try:
+        parsed = urlparse(str(url))
+        hostname = parsed.hostname or ""
+        if not hostname:
+            return True
+        # DNS-based check mirrors the fetcher's runtime guard
+        infos = socket.getaddrinfo(hostname, None)
+        for *_, sockaddr in infos:
+            try:
+                addr = ipaddress.ip_address(sockaddr[0])
+            except ValueError:
+                continue
+            for net in _PRIVATE_NETS:
+                if addr in net:
+                    return True
+    except Exception:
+        pass
+    return False
+
 
 class CrawlAuth(BaseModel):
-    type: str
+    type: Literal["basic", "cookie", "form"]
     credentials: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -20,20 +56,20 @@ class CrawlConfig(BaseModel):
     @field_validator("seed_urls")
     @classmethod
     def validate_ssrf(cls, v: list[HttpUrl]) -> list[HttpUrl]:
-        forbidden = ["169.254.169.254", "localhost", "127.0.0.1"]
         for url in v:
-            if any(f in str(url) for f in forbidden):
-                raise ValueError(f"Forbidden URL: {url}")
+            if _is_ssrf_url(str(url)):
+                raise ValueError(f"Forbidden URL (private/loopback/link-local): {url}")
         return v
+
     max_depth: int = Field(default=5, ge=1, le=20)
     max_pages: int = Field(default=2000, ge=1, le=100000)
     include_patterns: list[str] = Field(default_factory=list)
     exclude_patterns: list[str] = Field(default_factory=list)
     doc_types_wanted: list[DocType] = Field(default_factory=list)
-    respect_robots_txt: bool = True
+    respect_robots_txt: StrictBool = True
     max_requests_per_second: float = Field(default=1.0, ge=0.1, le=10.0)
     user_agent: str | None = None
-    follow_pdfs: bool = True
+    follow_pdfs: StrictBool = True
     max_pdf_size_mb: int = Field(default=50, ge=1)
     render_javascript: RenderMode = RenderMode.auto
     sitemap_hint_url: HttpUrl | None = None
@@ -41,8 +77,10 @@ class CrawlConfig(BaseModel):
 
 
 class IncrementalOptions(BaseModel):
+    model_config = ConfigDict(strict=True)
+
     since: datetime | None = None
-    previous_job_id: str | None = None
+    previous_job_id: StrictStr | None = None
     known_content_hashes: list[str] = Field(default_factory=list)
 
 

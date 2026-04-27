@@ -1,0 +1,22 @@
+Read scraper-api-spec.md, scraper-api-spec.yaml, and the entire codebase. This is a dedicated QA and security pass — no new features.
+Security (blind hunter pass):
+
+SSRF: audit every place the app makes an outbound HTTP request. Confirm SSRF defence (RFC-1918 / loopback / link-local rejection) is applied before every single fetch, not just the entry point. Write a test that injects a redirect chain that ends at 169.254.169.254 — must be blocked.
+Tenant isolation: audit every DB query and Redis key. Every query must have tenant_id as a filter — grep for any raw query that selects from crawl_jobs or scraped_documents without a tenant_id WHERE clause. Write tests for every endpoint asserting cross-tenant reads return 403.
+Injection: all DB queries must use parameterized statements — grep for any f-string or .format() inside a SQLAlchemy query. All Redis keys must be constructed from validated slugs only — no user-supplied strings in key names without sanitisation.
+Header injection: the app echoes X-Request-ID and X-Tenant-ID back in responses — verify these are validated as UUID and slug respectively before being echoed. A newline in the header value must return 400.
+Secrets: run trufflehog or detect-secrets scan on the repo. Zero findings allowed.
+Dependency CVEs: run pip-audit on requirements.txt. Fix or document any CRITICAL/HIGH findings.
+
+Functional QA:
+
+Contract coverage: generate a coverage report from Schemathesis runs — every path + method in the OpenAPI spec must have been exercised at least once.
+Edge cases: write tests for: empty seed_urls list, max_pages=0, max_depth=0, limit=0 on pagination, cursor that was issued for a different tenant, job that transitions from queued directly to failed (worker crash simulation), callback_url that returns a redirect.
+Concurrency: write a test that fires 20 concurrent POST /v1/crawl requests for the same tenant — assert no duplicate jobs created, no DB deadlocks, Redis counters are consistent.
+Data integrity: assert that content_hash in the DB matches sha256(raw_text) for every stored document. Add a Pytest fixture that computes and verifies this on every document written during tests.
+
+Load baseline:
+
+Add a locust script (tests/load/locustfile.py) that simulates: 10 concurrent users, each polling GET /v1/jobs/{job_id} every 5s and fetching /documents pages. Run for 60s against the local stack. Assert p95 < 200ms for job poll, p95 < 500ms for document page. Record results to tests/load/baseline.json.
+
+Fix every finding before marking done. Document any accepted risk in SECURITY.md.

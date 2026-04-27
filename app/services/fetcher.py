@@ -1,10 +1,10 @@
 """
 HTTP fetching service — async httpx client with:
-- Redirect following (max 10 hops), records redirect_chain/http_status/response_time_ms/headers
+- Redirect following (max 10 hops), SSRF-checked at every hop
 - Per-domain token-bucket rate limiting (Redis key DOMAIN:rate:<domain>; in-process fallback)
 - max_pdf_size_mb enforcement — aborts mid-stream; emits warning "pdf_too_large"
 - robots.txt compliance — cached in Redis DOMAIN:robots:<domain> TTL 1h
-- SSRF defence — rejects RFC-1918/loopback/link-local addresses (422)
+- SSRF defence — rejects RFC-1918/loopback/link-local addresses (422) on EVERY redirect hop
 - User-Agent from config
 """
 from __future__ import annotations
@@ -15,7 +15,7 @@ import logging
 import socket
 import time
 from dataclasses import dataclass, field
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from urllib.robotparser import RobotFileParser
 from typing import TYPE_CHECKING
 
@@ -140,11 +140,13 @@ async def _redis_consume(redis: "Redis", domain: str, rate: float) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# SSRF guard
+# SSRF guard — called on the initial URL and on every redirect hop
 # ---------------------------------------------------------------------------
 
 
 def _check_ssrf(hostname: str) -> None:
+    if not hostname:
+        raise FetchError("Empty hostname", code="validation_error", status=422)
     try:
         infos = socket.getaddrinfo(hostname, None)
     except socket.gaierror as exc:
@@ -205,6 +207,8 @@ async def _get_robots(
 # Public API
 # ---------------------------------------------------------------------------
 
+_REDIRECT_STATUSES = frozenset((301, 302, 303, 307, 308))
+
 
 async def fetch(
     url: str,
@@ -218,7 +222,12 @@ async def fetch(
     max_requests_per_second: float = 1.0,
     redis: "Redis | None" = None,
 ) -> FetchResult:
-    """Fetch *url* applying all policy guards.  Raises FetchError on violations."""
+    """Fetch *url* applying all policy guards.
+
+    SSRF is checked on the initial URL **and on every redirect destination**,
+    preventing redirect-chain attacks that land on RFC-1918 / link-local addresses.
+    Raises FetchError on policy violations.
+    """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise FetchError(f"Unsupported scheme '{parsed.scheme}'", code="validation_error", status=422)
@@ -227,10 +236,10 @@ async def fetch(
     scheme = parsed.scheme
     domain = hostname
 
-    # SSRF
+    # Initial SSRF check — also re-checked at each redirect hop below
     _check_ssrf(hostname)
 
-    # Rate limit
+    # Rate limit (keyed to initial domain)
     if redis is not None:
         try:
             allowed = await _redis_consume(redis, domain, max_requests_per_second)
@@ -245,15 +254,25 @@ async def fetch(
     warnings: list[str] = []
     max_pdf_bytes = max_pdf_size_mb * 1024 * 1024
 
-    async with httpx.AsyncClient(
-        follow_redirects=follow_redirects,
-        max_redirects=max_redirects,
+    # Separate client with follow_redirects=True only for robots.txt (low-risk,
+    # fetches from the same already-SSRF-checked domain).
+    robots_client = httpx.AsyncClient(
+        follow_redirects=True,
+        max_redirects=3,
+        timeout=httpx.Timeout(10.0),
+    )
+
+    # Main client: follow_redirects=False so we can SSRF-check every hop ourselves.
+    main_client = httpx.AsyncClient(
+        follow_redirects=False,
         timeout=httpx.Timeout(timeout_ms / 1000.0),
-    ) as client:
-        # robots.txt
+    )
+
+    async with robots_client, main_client:
+        # robots.txt check
         if respect_robots_txt:
             try:
-                parser = await _get_robots(client, scheme, domain, user_agent, redis)
+                parser = await _get_robots(robots_client, scheme, domain, user_agent, redis)
                 if not parser.can_fetch(user_agent, url):
                     raise RobotsDisallowedError(url)
             except RobotsDisallowedError:
@@ -263,50 +282,101 @@ async def fetch(
 
         start = time.monotonic()
         redirect_chain: list[str] = []
+        current_url = url
 
-        try:
-            async with client.stream("GET", url, headers={"User-Agent": user_agent}) as response:
-                for r in response.history:
-                    redirect_chain.append(str(r.url))
+        # Manual redirect loop — SSRF-check every hop
+        for _hop in range(max_redirects + 1):
+            hop_parsed = urlparse(current_url)
+            hop_host = hop_parsed.hostname or ""
 
-                http_status = response.status_code
-                resp_headers = dict(response.headers)
-                mime_type = resp_headers.get("content-type", "application/octet-stream").split(";")[0].strip()
-                is_pdf = mime_type == "application/pdf" or url.lower().endswith(".pdf")
+            # SSRF guard on each redirect destination (including the first request)
+            _check_ssrf(hop_host)
 
-                # content-length pre-check
-                cl_hdr = resp_headers.get("content-length")
-                if is_pdf and cl_hdr and int(cl_hdr) > max_pdf_bytes:
-                    warnings.append("pdf_too_large")
-                    logger.warning("pdf_too_large: %s header %s bytes > %d limit", url, cl_hdr, max_pdf_bytes)
+            try:
+                async with main_client.stream(
+                    "GET", current_url, headers={"User-Agent": user_agent}
+                ) as response:
+                    if response.status_code in _REDIRECT_STATUSES and follow_redirects:
+                        location = response.headers.get("location", "")
+                        if not location:
+                            raise FetchError(
+                                "Redirect response missing Location header",
+                                code="upstream_error",
+                                status=502,
+                            )
+                        redirect_chain.append(current_url)
+                        # Resolve relative redirect URLs
+                        current_url = urljoin(current_url, location)
+                        # Consume (discard) the redirect body
+                        await response.aread()
+                        continue
+
+                    # ── Final response ──────────────────────────────────────
+                    http_status = response.status_code
+                    resp_headers = dict(response.headers)
+                    mime_type = (
+                        resp_headers.get("content-type", "application/octet-stream")
+                        .split(";")[0]
+                        .strip()
+                    )
+                    is_pdf = mime_type == "application/pdf" or current_url.lower().endswith(".pdf")
+
+                    # content-length pre-check
+                    cl_hdr = resp_headers.get("content-length")
+                    if is_pdf and cl_hdr and int(cl_hdr) > max_pdf_bytes:
+                        warnings.append("pdf_too_large")
+                        logger.warning(
+                            "pdf_too_large: %s header %s bytes > %d limit",
+                            current_url, cl_hdr, max_pdf_bytes,
+                        )
+                        elapsed = int((time.monotonic() - start) * 1000)
+                        return FetchResult(
+                            url=url,
+                            final_url=str(response.url),
+                            http_status=http_status,
+                            response_time_ms=elapsed,
+                            redirect_chain=redirect_chain,
+                            headers=resp_headers,
+                            content=b"",
+                            mime_type=mime_type,
+                            warnings=warnings,
+                        )
+
+                    # streaming read
+                    chunks: list[bytes] = []
+                    received = 0
+                    truncated = False
+                    async for chunk in response.aiter_bytes():
+                        received += len(chunk)
+                        if is_pdf and received > max_pdf_bytes:
+                            warnings.append("pdf_too_large")
+                            logger.warning(
+                                "pdf_too_large: %s exceeded %d MB mid-stream",
+                                current_url, max_pdf_size_mb,
+                            )
+                            truncated = True
+                            break
+                        chunks.append(chunk)
+
                     elapsed = int((time.monotonic() - start) * 1000)
                     return FetchResult(
-                        url=url, final_url=str(response.url), http_status=http_status,
-                        response_time_ms=elapsed, redirect_chain=redirect_chain,
-                        headers=resp_headers, content=b"", mime_type=mime_type, warnings=warnings,
+                        url=url,
+                        final_url=str(response.url),
+                        http_status=http_status,
+                        response_time_ms=elapsed,
+                        redirect_chain=redirect_chain,
+                        headers=resp_headers,
+                        content=b"" if truncated else b"".join(chunks),
+                        mime_type=mime_type,
+                        warnings=warnings,
                     )
 
-                # streaming read
-                chunks: list[bytes] = []
-                received = 0
-                truncated = False
-                async for chunk in response.aiter_bytes():
-                    received += len(chunk)
-                    if is_pdf and received > max_pdf_bytes:
-                        warnings.append("pdf_too_large")
-                        logger.warning("pdf_too_large: %s exceeded %d MB mid-stream", url, max_pdf_size_mb)
-                        truncated = True
-                        break
-                    chunks.append(chunk)
+            except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError) as exc:
+                raise FetchError(str(exc), code="upstream_error", status=502) from exc
 
-                elapsed = int((time.monotonic() - start) * 1000)
-                return FetchResult(
-                    url=url, final_url=str(response.url), http_status=http_status,
-                    response_time_ms=elapsed, redirect_chain=redirect_chain,
-                    headers=resp_headers,
-                    content=b"" if truncated else b"".join(chunks),
-                    mime_type=mime_type, warnings=warnings,
-                )
-
-        except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError) as exc:
-            raise FetchError(str(exc), code="upstream_error", status=502) from exc
+        # Exhausted redirect budget
+        raise FetchError(
+            f"Too many redirects (max {max_redirects})",
+            code="upstream_error",
+            status=502,
+        )

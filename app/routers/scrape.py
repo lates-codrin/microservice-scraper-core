@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Header, Request, status
 from fastapi.responses import JSONResponse
 
 from app.dependencies import get_job_store
@@ -25,6 +26,7 @@ async def scrape_url(
     payload: ScrapeRequest,
     request: Request,
     store: JobStore = Depends(get_job_store),
+    idempotency_key: UUID = Header(..., alias="Idempotency-Key"),
 ) -> ScrapeResponse | JSONResponse:
     if payload.mode == "async":
         job_id = await store.create_scrape_job(request.state.tenant_id)

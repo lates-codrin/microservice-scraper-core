@@ -2,7 +2,8 @@ fastapi>=0.115.10,<1.0.0
 uvicorn[standard]>=0.34.0,<1.0.0
 pydantic>=2.12.0,<3.0.0
 PyYAML>=6.0.2,<7.0.0
-pytest>=8.3.5,<9.0.0
+# pytest >=9.0.3 fixes CVE-2025-71176 (/tmp dir privilege escalation on UNIX)
+pytest>=9.0.3,<10.0.0
 httpx>=0.28.1,<1.0.0
 # Fetcher
 redis[hiredis]>=5.0.0,<6.0.0
@@ -11,13 +12,15 @@ playwright>=1.44.0,<2.0.0
 # Frontier — RabbitMQ
 aio-pika>=9.4.0,<10.0.0
 # Extractor — HTML
+# lxml >=6.1.0 fixes CVE-2026-41066 (XXE / local file read via resolve_entities)
 trafilatura>=1.12.0,<2.0.0
 beautifulsoup4>=4.12.0,<5.0.0
-lxml>=5.0.0,<6.0.0
+lxml>=6.1.0,<7.0.0
 # Extractor — PDF
 pdfplumber>=0.11.0,<1.0.0
 pytesseract>=0.3.13,<1.0.0
-Pillow>=10.0.0,<12.0.0
+# Pillow >=12.2.0 fixes CVE-2026-25990 (PSD OOB write) and CVE-2026-40192 (FITS decompression bomb)
+Pillow>=12.2.0,<13.0.0
 # Extractor — DOCX / XLSX
 python-docx>=1.1.0,<2.0.0
 openpyxl>=3.1.0,<4.0.0
@@ -27,4 +30,4 @@ asyncpg>=0.29.0,<1.0.0
 alembic>=1.13.0,<2.0.0
 greenlet>=3.0.0,<4.0.0
 schemathesis>=3.38.0,<4.0.0
-pytest-asyncio>=0.23.0,<1.0.0
+pytest-asyncio>=0.23.0,<2.0.0

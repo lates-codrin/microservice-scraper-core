@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 from datetime import UTC, datetime, timedelta
@@ -15,9 +16,14 @@ from app.models.document import ScrapedDocument
 from app.models.enums import ContentType, CrawlStatus, DocType
 from app.models.db import DbCrawlJob, DbScrapedDocument
 
+
 class DuplicateJobError(Exception):
-    """Raised when an Idempotency-Key is reused with a different payload."""
-    pass
+    """Raised when an Idempotency-Key is reused with a different request body."""
+
+    def __init__(self, message: str = "", existing_job_id: str = "") -> None:
+        super().__init__(message)
+        self.existing_job_id = existing_job_id
+
 
 class JobStore:
     def __init__(self, session: AsyncSession, redis_client: redis.Redis) -> None:
@@ -34,19 +40,37 @@ class JobStore:
         incremental: IncrementalOptions | None = None,
         callback_url: Any | None = None,
     ) -> CrawlJob:
-        # Idempotency check in Redis
+        # Idempotency check — atomic SET NX guarantees exactly-once job creation
+        # under concurrent requests with the same idempotency key.
         idem_key = f"IDEM:{tenant_id}:{idempotency_key}"
-        existing_job_id = self.redis.get(idem_key)
-        if existing_job_id:
-            # Simple check: if fingerprint matches, return existing
-            # In real prod, we'd store fingerprint in Redis too
-            job = await self.get_job(existing_job_id)
-            if job:
-                return job
+        idem_fp_key = f"IDEM:fp:{tenant_id}:{idempotency_key}"
+
+        # Use SETNX semantics: SET key "PENDING" NX EX 86400
+        # returns True if we won the race, None/False if key already existed.
+        won_race = self.redis.set(idem_key, "PENDING", ex=86400, nx=True)
+        if not won_race:
+            # Another coroutine already owns this key.  Retry until the winner
+            # replaces "PENDING" with the real job_id (up to 2 s total).
+            for _attempt in range(40):
+                existing_job_id = self.redis.get(idem_key)
+                if existing_job_id and existing_job_id != "PENDING":
+                    stored_fp = self.redis.get(idem_fp_key)
+                    if stored_fp and stored_fp != request_fingerprint:
+                        raise DuplicateJobError(
+                            f"Idempotency-Key '{idempotency_key}' already used with a different request body.",
+                            existing_job_id=existing_job_id,
+                        )
+                    job = await self.get(existing_job_id)
+                    if job:
+                        return job
+                    break
+                await asyncio.sleep(0.05)
+            # Timed out or key never materialised — fall through and create a new job.
+            # This should not happen in practice.
 
         job_id = f"cj_{uuid4().hex[:12]}"
         now = datetime.now(UTC)
-        
+
         db_job = DbCrawlJob(
             job_id=job_id,
             tenant_id=tenant_id,
@@ -58,24 +82,25 @@ class JobStore:
                 documents_extracted=0,
                 documents_classified=0,
                 urls_pending=0,
-                bytes_downloaded=0
+                bytes_downloaded=0,
             ).model_dump(),
             stats=CrawlStats(by_doc_type={"other": 0}, http_errors={}).model_dump(),
-            config=config.model_dump(),
+            config=config.model_dump(mode="json"),
             submitted_at=now,
             estimated_completion_at=now + timedelta(minutes=30),
             callback_url=str(callback_url) if callback_url else None,
         )
-        
+
         self.session.add(db_job)
         await self.session.commit()
-        
-        # Mark idempotency
+
+        # Store idempotency key + fingerprint for future collision detection
         self.redis.setex(idem_key, 86400, job_id)
-        
+        self.redis.setex(idem_fp_key, 86400, request_fingerprint)
+
         if incremental and incremental.known_content_hashes:
             self.redis.sadd(f"JOB:known_hashes:{job_id}", *incremental.known_content_hashes)
-            
+
         return await self.get(job_id)
 
     async def create_scrape_job(self, tenant_id: str) -> str:
@@ -92,7 +117,7 @@ class JobStore:
                 documents_extracted=0,
                 documents_classified=0,
                 urls_pending=0,
-                bytes_downloaded=0
+                bytes_downloaded=0,
             ).model_dump(),
             stats=CrawlStats(by_doc_type={"other": 0}, http_errors={}).model_dump(),
             config=None,
@@ -108,7 +133,7 @@ class JobStore:
         db_job = result.scalar_one_or_none()
         if not db_job:
             return None
-        
+
         return CrawlJob(
             job_id=db_job.job_id,
             tenant_id=db_job.tenant_id,
@@ -163,7 +188,9 @@ class JobStore:
         return await self.update(job_id, status=CrawlStatus.cancelled)
 
     async def document_count(self, job_id: str) -> int:
-        stmt = select(func.count(DbScrapedDocument.document_id)).where(DbScrapedDocument.job_id == job_id)
+        stmt = select(func.count(DbScrapedDocument.document_id)).where(
+            DbScrapedDocument.job_id == job_id
+        )
         return (await self.session.execute(stmt)).scalar_one()
 
     async def get_documents(
@@ -186,22 +213,22 @@ class JobStore:
             stmt = stmt.where(DbScrapedDocument.doc_type == doc_type)
         if min_confidence > 0:
             stmt = stmt.where(DbScrapedDocument.doc_type_confidence >= min_confidence)
-        
-        # Simple offset pagination for now (spec says opaque cursor, we use offset encoded)
+
+        # Simple offset pagination (opaque cursor encodes offset as base64)
         offset = 0
         if cursor:
             try:
                 offset = int(base64.b64decode(cursor).decode())
-            except:
+            except Exception:
                 pass
-        
+
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = (await self.session.execute(count_stmt)).scalar_one()
 
         stmt = stmt.offset(offset).limit(limit + 1)
         result = await self.session.execute(stmt)
         docs = result.scalars().all()
-        
+
         has_more = len(docs) > limit
         if has_more:
             docs = docs[:limit]
@@ -233,7 +260,7 @@ class JobStore:
             )
             for d in docs
         ]
-        
+
         return models, next_cursor, has_more, total
 
     async def add_document(self, job_id: str, tenant_id: str, doc: ScrapedDocument) -> None:
@@ -258,7 +285,7 @@ class JobStore:
             content_hash=doc.content_hash,
             metadata_=doc.metadata,
             extraction_confidence=doc.extraction_confidence,
-            warnings=doc.warnings
+            warnings=doc.warnings,
         )
         self.session.add(db_doc)
         await self.session.commit()
@@ -270,9 +297,10 @@ class JobStore:
                 CrawlStatus.fetching_sitemap.value,
                 CrawlStatus.crawling.value,
                 CrawlStatus.extracting.value,
-                CrawlStatus.classifying.value
+                CrawlStatus.classifying.value,
             ])
         )
         return (await self.session.execute(stmt)).scalar_one()
+
 
 InMemoryJobStore = JobStore

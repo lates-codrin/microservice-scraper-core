@@ -568,9 +568,11 @@ components:
         since:
           type: string
           format: date-time
+          nullable: true
           description: Only pages modified after this timestamp (if Last-Modified known).
         previous_job_id:
           type: string
+          nullable: true
           description: Provider looks up baseline + diffs.
         known_content_hashes:
           type: array
@@ -584,7 +586,9 @@ components:
         config:
           $ref: '#/components/schemas/CrawlConfig'
         incremental:
-          $ref: '#/components/schemas/IncrementalOptions'
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/IncrementalOptions'
         callback_url:
           type: string
           format: uri

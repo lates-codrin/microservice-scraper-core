@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -8,6 +9,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
 from app.models.common import ErrorEnvelope, ErrorPayload
+
+# Tenant slug must be printable ASCII only — no newlines, CRs, NUL bytes or
+# other control characters that could enable header/Redis-key injection.
+_SAFE_SLUG_RE = re.compile(r"^[\x21-\x7E]+$")
 
 
 class AuthHeadersMiddleware(BaseHTTPMiddleware):
@@ -78,6 +83,17 @@ class AuthHeadersMiddleware(BaseHTTPMiddleware):
                 request_id=response_request_id,
             )
 
+        # Reject any control characters (newlines, CRs, etc.) before UUID parse —
+        # prevents header-injection in the echoed X-Request-ID.
+        if not _SAFE_SLUG_RE.match(incoming_request_id):
+            return self._error_response(
+                status_code=400,
+                code="invalid_request",
+                message="X-Request-ID contains invalid characters.",
+                request_id=str(uuid4()),
+                details={"header": "X-Request-ID"},
+            )
+
         try:
             UUID(incoming_request_id)
         except ValueError:
@@ -95,6 +111,17 @@ class AuthHeadersMiddleware(BaseHTTPMiddleware):
                 code="forbidden",
                 message="X-Tenant-ID header is required.",
                 request_id=incoming_request_id,
+            )
+
+        # Reject control characters in X-Tenant-ID — prevents header injection
+        # and Redis key injection (keys are built as "IDEM:{tenant_id}:...").
+        if not _SAFE_SLUG_RE.match(tenant_id.strip()):
+            return self._error_response(
+                status_code=400,
+                code="invalid_request",
+                message="X-Tenant-ID contains invalid characters.",
+                request_id=incoming_request_id,
+                details={"header": "X-Tenant-ID"},
             )
 
         request.state.request_id = incoming_request_id
