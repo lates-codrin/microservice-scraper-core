@@ -1033,8 +1033,8 @@ we use on our side.
 
 **Case 2 — Sibiu, mid-size site, mostly static HTML + PDFs.**
 
-- Seed: `https://primaria-sibiu.ro/`
-- Allowed domains: `["primaria-sibiu.ro"]`
+- Seed: `https://www.sibiu.ro/`
+- Allowed domains: `["www.sibiu.ro"]`
 - Expected `doc_type` distribution hint: mix of `hcl`, `dispozitie_primar`,
   `regulament`, `pug` / `puz` (urbanism-heavy), and `proiect_hotarare` on
   the pre-vote page. PDFs dominate for HCLs.

@@ -1,6 +1,6 @@
 # Stage 1: Builder
 # python:3.12-slim-bookworm as of 2024-04-22
-FROM python@sha256:777174e2a6d71b869408e08f51952e42f6194b1509a250320a068ca672f778d1 AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -18,7 +18,7 @@ RUN pip install --upgrade pip \
     && pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
 # Stage 2: Runtime
-FROM python@sha256:777174e2a6d71b869408e08f51952e42f6194b1509a250320a068ca672f778d1 AS runtime
+FROM python:3.12-slim-bookworm AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -27,7 +27,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install runtime dependencies and Playwright browsers
+# Install runtime dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
@@ -57,11 +57,14 @@ COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir /wheels/* \
     && rm -rf /wheels
 
-# Install Playwright browsers as non-root
-USER appuser
+# Install Playwright browsers as root (requires system dependencies)
 RUN playwright install --with-deps chromium
 
-COPY --key-auth=false app ./app
+USER appuser
+
+COPY app ./app
+COPY alembic ./alembic
+COPY alembic.ini ./alembic.ini
 COPY scraper-api-spec.yaml ./scraper-api-spec.yaml
 COPY .env.example ./.env.example
 
@@ -73,4 +76,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     -H "X-Request-ID: 00000000-0000-4000-8000-000000000001" \
     -H "X-Tenant-ID: ${DEFAULT_TENANT_ID:-ph-balta-doamnei}" || exit 1
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8080"]

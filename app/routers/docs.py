@@ -6,7 +6,6 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
-from app.main import app as fastapi_app
 from app.settings import settings
 
 router = APIRouter(tags=["docs"])
@@ -75,6 +74,11 @@ async def get_scalar_docs() -> str:
     return _get_scalar_html("/v1/openapi.json")
 
 
+@router.get("/v1/docs", response_class=HTMLResponse, include_in_schema=False)
+async def get_scalar_docs_v1() -> str:
+    return await get_scalar_docs()
+
+
 @router.get("/redoc", response_class=HTMLResponse, include_in_schema=False)
 async def get_redoc_docs() -> str:
     """Serve read-only ReDoc API documentation."""
@@ -82,6 +86,11 @@ async def get_redoc_docs() -> str:
         raise HTTPException(status_code=404, detail="Documentation disabled")
     
     return _get_redoc_html("/v1/openapi.json")
+
+
+@router.get("/v1/redoc", response_class=HTMLResponse, include_in_schema=False)
+async def get_redoc_docs_v1() -> str:
+    return await get_redoc_docs()
 
 
 @router.get("/docs/health", status_code=status.HTTP_200_OK, include_in_schema=False)
@@ -101,3 +110,8 @@ async def docs_health_badge() -> JSONResponse:
         },
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
     )
+
+
+@router.get("/v1/docs/health", status_code=status.HTTP_200_OK, include_in_schema=False)
+async def docs_health_badge_v1() -> JSONResponse:
+    return await docs_health_badge()

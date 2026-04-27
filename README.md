@@ -59,7 +59,41 @@ If you prefer to use external services, update the connection strings in your `.
 4. Run `docker compose up --build`
 
 The service will be available at `http://localhost:8080`.
+Open the interactive API docs at `http://localhost:8080/v1/docs` or the read-only ReDoc view at `http://localhost:8080/v1/redoc`.
+Use `/v1/docs` when you want an interactive console for trying requests, and `/v1/redoc` when you want a cleaner read-only reference page.
 You can access the RabbitMQ Management UI at `http://localhost:15672` (guest/guest).
+
+### Database GUIs
+If you want to inspect stored data with a desktop client, use these host connections:
+
+- **DBeaver / pgAdmin4** for PostgreSQL: `localhost:5432`, database `scraper`, user `lex`, password `lex`
+- **RedisInsight** for Redis: `localhost:6379`
+
+These ports are published on localhost in `docker-compose.yml`, so GUI tools on Windows can connect directly.
+
+The bearer token is not issued by the service. Set `API_KEY` in your `.env` file; for local development the default is `dev-api-key-change-me`. The docs, OpenAPI JSON, and health endpoint are public so you can inspect the contract before authenticating.
+
+## Docker Compose Commands
+
+Use these commands from the repository root.
+
+- Build images: `docker compose build`
+- Build and start everything: `docker compose up --build`
+- Start in background: `docker compose up -d`
+- Rebuild and restart in background: `docker compose up -d --build`
+- Stop and remove containers/network: `docker compose down`
+- Stop and remove containers/network/volumes: `docker compose down -v`
+- See running services: `docker compose ps`
+- Follow logs for all services: `docker compose logs -f`
+- Follow logs for API only: `docker compose logs -f scraper-api`
+- Restart one service: `docker compose restart scraper-api`
+
+Typical lifecycle:
+
+1. `docker compose up -d --build`
+2. `docker compose ps`
+3. `docker compose logs -f scraper-api`
+4. `docker compose down`
 
 ## Environment Variables
 

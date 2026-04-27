@@ -100,7 +100,16 @@ def test_openapi_spec_has_parameter_descriptions(client: TestClient) -> None:
     
     # Verify /v1/jobs/{job_id}/documents parameters have descriptions
     docs_get = spec["paths"]["/v1/jobs/{job_id}/documents"]["get"]
-    params_by_name = {p["name"]: p for p in docs_get["parameters"]}
+
+    def resolve_param(param: dict) -> dict:
+        ref = param.get("$ref")
+        if not ref:
+            return param
+        key = ref.split("/")[-1]
+        return spec["components"]["parameters"][key]
+
+    resolved_params = [resolve_param(p) for p in docs_get["parameters"]]
+    params_by_name = {p["name"]: p for p in resolved_params}
     
     assert "description" in params_by_name["cursor"]
     assert "pagination token" in params_by_name["cursor"]["description"].lower()

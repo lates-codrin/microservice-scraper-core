@@ -13,6 +13,16 @@ from app.models.common import ErrorEnvelope, ErrorPayload
 # Tenant slug must be printable ASCII only — no newlines, CRs, NUL bytes or
 # other control characters that could enable header/Redis-key injection.
 _SAFE_SLUG_RE = re.compile(r"^[\x21-\x7E]+$")
+_PUBLIC_PATHS = {
+    "/docs",
+    "/redoc",
+    "/docs/health",
+    "/v1/docs",
+    "/v1/redoc",
+    "/v1/docs/health",
+    "/v1/openapi.json",
+    "/v1/health",
+}
 
 
 class AuthHeadersMiddleware(BaseHTTPMiddleware):
@@ -44,6 +54,10 @@ class AuthHeadersMiddleware(BaseHTTPMiddleware):
         )
 
     async def dispatch(self, request: Request, call_next: Any) -> JSONResponse:
+        if request.url.path in _PUBLIC_PATHS:
+            response = await call_next(request)
+            return response
+
         incoming_request_id = request.headers.get("X-Request-ID")
         response_request_id = incoming_request_id or str(uuid4())
 
