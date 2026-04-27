@@ -19,6 +19,7 @@ info:
     email: costin@citydock.ro
   license:
     name: Apache-2.0
+  x-scalar-theme: purple
 
 servers:
   - url: https://scraper.partner.example/api
@@ -64,7 +65,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ScrapeRequest'
             example:
-              url: "https://primaria-exemplu.ro/hcl/hcl-125-2024"
+              url: "https://primaria-bucuresti.ro/hcl/hcl-125-2024"
               render_javascript: "auto"
               follow_redirects: true
               include_raw_html: false
@@ -72,6 +73,80 @@ paths:
               extract_structured: false
               timeout_ms: 30000
               mode: "sync"
+      x-codeSamples:
+        - lang: curl
+          label: cURL
+          source: |
+            curl -X POST "http://localhost:8080/v1/scrape" \
+              -H "Authorization: Bearer YOUR_API_KEY" \
+              -H "X-Request-ID: $(uuidgen)" \
+              -H "X-Tenant-ID: ph-bucuresti" \
+              -H "Idempotency-Key: $(uuidgen)" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "url": "https://primaria-bucuresti.ro/hcl/hcl-125-2024",
+                "mode": "sync",
+                "timeout_ms": 30000,
+                "render_javascript": "auto",
+                "classify": true
+              }'
+        - lang: python
+          label: Python
+          source: |
+            import requests
+            import uuid
+
+            headers = {
+                "Authorization": "Bearer YOUR_API_KEY",
+                "X-Request-ID": str(uuid.uuid4()),
+                "X-Tenant-ID": "ph-bucuresti",
+                "Idempotency-Key": str(uuid.uuid4()),
+                "Content-Type": "application/json",
+            }
+            
+            data = {
+                "url": "https://primaria-bucuresti.ro/hcl/hcl-125-2024",
+                "mode": "sync",
+                "timeout_ms": 30000,
+                "render_javascript": "auto",
+                "classify": True,
+            }
+            
+            response = requests.post(
+                "http://localhost:8080/v1/scrape",
+                headers=headers,
+                json=data,
+            )
+            print(response.json())
+        - lang: javascript
+          label: JavaScript
+          source: |
+            const fetch = require('node-fetch');
+            const { v4: uuidv4 } = require('uuid');
+
+            const headers = {
+                "Authorization": "Bearer YOUR_API_KEY",
+                "X-Request-ID": uuidv4(),
+                "X-Tenant-ID": "ph-bucuresti",
+                "Idempotency-Key": uuidv4(),
+                "Content-Type": "application/json",
+            };
+
+            const data = {
+                url: "https://primaria-bucuresti.ro/hcl/hcl-125-2024",
+                mode: "sync",
+                timeout_ms: 30000,
+                render_javascript: "auto",
+                classify: true,
+            };
+
+            fetch("http://localhost:8080/v1/scrape", {
+                method: "POST",
+                headers,
+                body: JSON.stringify(data),
+            })
+                .then(res => res.json())
+                .then(data => console.log(data));
       responses:
         '200':
           description: Sync scrape successful
@@ -121,6 +196,100 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CrawlRequest'
+            example:
+              config:
+                seed_urls:
+                  - "https://primaria-bucuresti.ro"
+                  - "https://primaria-sibiu.ro"
+                allowed_domains:
+                  - "primaria-bucuresti.ro"
+                  - "primaria-sibiu.ro"
+                max_depth: 3
+                max_pages: 1000
+                include_patterns: [".*hcl.*", ".*dispozitie.*"]
+                exclude_patterns: [".*pdf$"]
+                respect_robots_txt: true
+                max_requests_per_second: 1.0
+                render_javascript: "auto"
+                follow_pdfs: true
+              priority: "normal"
+      x-codeSamples:
+        - lang: curl
+          label: cURL
+          source: |
+            curl -X POST "http://localhost:8080/v1/crawl" \
+              -H "Authorization: Bearer YOUR_API_KEY" \
+              -H "X-Request-ID: $(uuidgen)" \
+              -H "X-Tenant-ID: ph-bucuresti" \
+              -H "Idempotency-Key: $(uuidgen)" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "config": {
+                  "seed_urls": ["https://primaria-bucuresti.ro"],
+                  "allowed_domains": ["primaria-bucuresti.ro"],
+                  "max_depth": 3,
+                  "max_pages": 1000
+                }
+              }'
+        - lang: python
+          label: Python
+          source: |
+            import requests
+            import uuid
+
+            headers = {
+                "Authorization": "Bearer YOUR_API_KEY",
+                "X-Request-ID": str(uuid.uuid4()),
+                "X-Tenant-ID": "ph-bucuresti",
+                "Idempotency-Key": str(uuid.uuid4()),
+                "Content-Type": "application/json",
+            }
+            
+            data = {
+                "config": {
+                    "seed_urls": ["https://primaria-bucuresti.ro"],
+                    "allowed_domains": ["primaria-bucuresti.ro"],
+                    "max_depth": 3,
+                    "max_pages": 1000,
+                }
+            }
+            
+            response = requests.post(
+                "http://localhost:8080/v1/crawl",
+                headers=headers,
+                json=data,
+            )
+            print(response.json())
+        - lang: javascript
+          label: JavaScript
+          source: |
+            const fetch = require('node-fetch');
+            const { v4: uuidv4 } = require('uuid');
+
+            const headers = {
+                "Authorization": "Bearer YOUR_API_KEY",
+                "X-Request-ID": uuidv4(),
+                "X-Tenant-ID": "ph-bucuresti",
+                "Idempotency-Key": uuidv4(),
+                "Content-Type": "application/json",
+            };
+
+            const data = {
+                config: {
+                    seed_urls: ["https://primaria-bucuresti.ro"],
+                    allowed_domains: ["primaria-bucuresti.ro"],
+                    max_depth: 3,
+                    max_pages: 1000,
+                },
+            };
+
+            fetch("http://localhost:8080/v1/crawl", {
+                method: "POST",
+                headers,
+                body: JSON.stringify(data),
+            })
+                .then(res => res.json())
+                .then(data => console.log(data));
       responses:
         '202':
           description: Crawl queued
@@ -134,6 +303,11 @@ paths:
                   status: { type: string, example: "queued" }
                   submitted_at: { type: string, format: date-time }
                   estimated_completion_at: { type: string, format: date-time, nullable: true }
+              example:
+                job_id: "job-123e4567-e89b-12d3-a456-426614174000"
+                status: "queued"
+                submitted_at: "2024-01-15T10:30:00Z"
+                estimated_completion_at: "2024-01-15T12:30:00Z"
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -199,22 +373,24 @@ paths:
         - name: cursor
           in: query
           schema: { type: string, nullable: true }
-          description: Opaque pagination token
+          description: Opaque pagination token for fetching next page
         - name: limit
           in: query
           schema: { type: integer, default: 100, minimum: 1, maximum: 500 }
+          description: Maximum number of documents per page (default 100)
         - name: doc_type
           in: query
           schema:
             $ref: '#/components/schemas/DocType'
-          description: Filter by classification
+          description: Filter by classification (e.g., hcl, dispozitie_primar)
         - name: min_confidence
           in: query
           schema: { type: number, format: float, default: 0.0, minimum: 0.0, maximum: 1.0 }
+          description: Return only documents with classification confidence ≥ this threshold
         - name: changed_only
           in: query
           schema: { type: boolean, default: false }
-          description: On incremental crawls, only new/changed vs baseline
+          description: On incremental crawls, only return documents that are new or changed vs baseline
       responses:
         '200':
           description: Page of documents

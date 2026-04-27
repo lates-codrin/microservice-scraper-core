@@ -8,7 +8,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.middleware.auth_headers import AuthHeadersMiddleware
 from app.models.common import ErrorEnvelope, ErrorPayload
-from app.routers import classify, crawl, extract, health, jobs, openapi_spec, scrape
+from app.routers import classify, crawl, docs, extract, health, jobs, openapi_spec, scrape
 from app.settings import settings
 
 
@@ -95,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(extract.router)
     app.include_router(health.router)
     app.include_router(openapi_spec.router)
+    app.include_router(docs.router)
 
     return app
 
