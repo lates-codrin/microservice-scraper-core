@@ -1,3 +1,7 @@
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0
+"""ScrapedDocument model — the core output entity."""
+
 from __future__ import annotations
 
 from datetime import date

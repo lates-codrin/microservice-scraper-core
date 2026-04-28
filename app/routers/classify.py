@@ -1,25 +1,38 @@
+﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
+"""POST /v1/classify â€” document type classification endpoint."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, status
 
-from app.models.enums import DocType
 from app.models.requests import ClassifyRequest
 from app.models.responses import ClassifyAlternative, ClassifyResponse
+from app.services.classifier import classify_document
 
 router = APIRouter(prefix="/v1", tags=["classify"])
 
 
-@router.post("/classify", response_model=ClassifyResponse, status_code=status.HTTP_200_OK)
-def classify(payload: ClassifyRequest) -> ClassifyResponse:
-    from app.services.classifier import classify_document
-    doc_type, confidence, alts = classify_document(payload.url_hint, payload.content)
-    
+@router.post(
+    "/classify",
+    response_model=ClassifyResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def classify(payload: ClassifyRequest) -> ClassifyResponse:
+    """Classify a document's type based on content and optional URL/title hints."""
+    url_hint = str(payload.url_hint) if payload.url_hint else None
+    doc_type, confidence, alternatives = classify_document(
+        url_hint, payload.content
+    )
+
     return ClassifyResponse(
         doc_type=doc_type,
         doc_type_confidence=confidence,
         language="ro",
         alternatives=[
-            ClassifyAlternative(doc_type=a["doc_type"], confidence=a["confidence"])
-            for a in alts
-        ]
+            ClassifyAlternative(
+                doc_type=alt["doc_type"], confidence=alt["confidence"]
+            )
+            for alt in alternatives
+        ],
     )

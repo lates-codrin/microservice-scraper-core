@@ -1,3 +1,7 @@
+﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
+"""Rule-based document type classifier for Romanian municipal taxonomy."""
+
 import re
 from typing import Any, Tuple, List, Dict
 from app.models.enums import DocType
@@ -24,23 +28,23 @@ URL_PATTERNS = {
 }
 
 KEYWORDS = {
-    DocType.hcl: ["hotarare", "hotărâre", "consiliul local"],
-    DocType.dispozitie_primar: ["dispozitie", "dispoziție", "primar"],
+    DocType.hcl: ["hotarare", "hotÄƒrÃ¢re", "consiliul local"],
+    DocType.dispozitie_primar: ["dispozitie", "dispoziÈ›ie", "primar"],
     DocType.act_normativ_local: ["act normativ"],
-    DocType.proiect_hotarare: ["proiect de hotarare", "proiect de hotărâre"],
+    DocType.proiect_hotarare: ["proiect de hotarare", "proiect de hotÄƒrÃ¢re"],
     DocType.regulament: ["regulament"],
     DocType.buget: ["buget local", "bugetului local"],
-    DocType.raport_executie_bugetara: ["executie bugetara", "execuție bugetară"],
+    DocType.raport_executie_bugetara: ["executie bugetara", "execuÈ›ie bugetarÄƒ"],
     DocType.pug: ["plan urbanistic general", "pug"],
     DocType.puz: ["plan urbanistic zonal", "puz"],
     DocType.strategie: ["strategie", "dezvoltare"],
-    DocType.organigrama: ["organigrama", "organigramă"],
+    DocType.organigrama: ["organigrama", "organigramÄƒ"],
     DocType.raport_activitate: ["raport de activitate"],
     DocType.proces_verbal: ["proces verbal"],
-    DocType.consultare_publica: ["consultare publica", "consultare publică", "dezbatere"],
-    DocType.anunt_public: ["anunt", "anunț"],
-    DocType.anunt_achizitie: ["achizitie", "achiziție", "licitatie", "licitație"],
-    DocType.declaratie_avere: ["declaratie de avere", "declarație de avere", "interese"],
+    DocType.consultare_publica: ["consultare publica", "consultare publicÄƒ", "dezbatere"],
+    DocType.anunt_public: ["anunt", "anunÈ›"],
+    DocType.anunt_achizitie: ["achizitie", "achiziÈ›ie", "licitatie", "licitaÈ›ie"],
+    DocType.declaratie_avere: ["declaratie de avere", "declaraÈ›ie de avere", "interese"],
 }
 
 def classify_document(url: Any | None, text: str) -> Tuple[DocType, float, List[Dict[str, Any]]]:
@@ -105,7 +109,7 @@ def extract_hcl_fields(text: str) -> Tuple[Dict[str, Any], Dict[str, float]]:
         fields["subject"] = m_subj.group(1).strip()
         conf["subject"] = 0.85
         
-    m_votes = re.search(r"pentru:\s*(\d+).*?împotrivă:\s*(\d+).*?abțineri:\s*(\d+)", text, re.IGNORECASE)
+    m_votes = re.search(r"pentru:\s*(\d+).*?Ã®mpotrivÄƒ:\s*(\d+).*?abÈ›ineri:\s*(\d+)", text, re.IGNORECASE)
     if m_votes:
         fields["votes"] = {
             "for": int(m_votes.group(1)),
@@ -115,3 +119,4 @@ def extract_hcl_fields(text: str) -> Tuple[Dict[str, Any], Dict[str, float]]:
         conf["votes"] = 0.95
         
     return fields, conf
+

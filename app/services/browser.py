@@ -1,16 +1,18 @@
+﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
-Browser rendering service — async Playwright Chromium pool.
+Browser rendering service â€” async Playwright Chromium pool.
 
 Pool size: BROWSER_WORKERS env var (default 4).
 
 render_javascript modes:
-  "always"  → always Playwright
-  "never"   → always httpx (caller must pass raw bytes via fetch())
-  "auto"    → httpx first; if response HTML looks like SPA shell
+  "always"  â†’ always Playwright
+  "never"   â†’ always httpx (caller must pass raw bytes via fetch())
+  "auto"    â†’ httpx first; if response HTML looks like SPA shell
                (<noscript> present OR <div id="root"></div> with no children)
                re-fetch with Playwright.
 
-include_raw_html=True → attach post-render HTML to result.
+include_raw_html=True â†’ attach post-render HTML to result.
 """
 from __future__ import annotations
 
@@ -73,7 +75,7 @@ class BrowserPool:
                 from playwright.async_api import async_playwright  # type: ignore[import-untyped]
             except ImportError as exc:
                 raise RuntimeError(
-                    "playwright not installed — add 'playwright' to requirements.txt"
+                    "playwright not installed â€” add 'playwright' to requirements.txt"
                 ) from exc
             self._playwright = await async_playwright().start()
             self._browser = await self._playwright.chromium.launch(headless=True)
@@ -144,9 +146,9 @@ async def render_page(
     Apply render_javascript policy.
 
     Returns (html_bytes, final_url, used_playwright).
-      html_bytes  — final HTML (post-render if Playwright used)
-      final_url   — URL after any JS-driven navigation
-      used_playwright — True when Playwright was invoked
+      html_bytes  â€” final HTML (post-render if Playwright used)
+      final_url   â€” URL after any JS-driven navigation
+      used_playwright â€” True when Playwright was invoked
     """
     _pool = pool or get_pool()
 
@@ -158,10 +160,11 @@ async def render_page(
         result = await _pool.render(url, timeout_ms=timeout_ms, user_agent=user_agent)
         return (result.html, result.url, True)
 
-    # "auto" — use httpx bytes if provided, else just fetch via Playwright
+    # "auto" â€” use httpx bytes if provided, else just fetch via Playwright
     if raw_html_bytes and not _looks_like_spa(raw_html_bytes):
         return (raw_html_bytes, url, False)
 
-    # Looks like SPA (or no bytes given) → Playwright
+    # Looks like SPA (or no bytes given) â†’ Playwright
     result = await _pool.render(url, timeout_ms=timeout_ms, user_agent=user_agent)
     return (result.html, result.url, True)
+

@@ -1,3 +1,7 @@
+﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
+"""SQLAlchemy ORM models for PostgreSQL persistence."""
+
 from __future__ import annotations
 
 import enum
@@ -73,3 +77,4 @@ class DbScrapedDocument(Base):
     __table_args__ = (
         Index("idx_tenant_job_doc_conf", "tenant_id", "job_id", "doc_type", "doc_type_confidence"),
     )
+

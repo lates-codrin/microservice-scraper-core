@@ -1,3 +1,7 @@
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0
+"""Inbound request models."""
+
 from __future__ import annotations
 
 from typing import Any, Literal

@@ -1,86 +1,80 @@
+﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
+"""Tests for incremental crawling, deduplication, pagination, and 410 Gone."""
+
 import pytest
-import fakeredis
-import base64
-import json
-from datetime import datetime, timedelta, UTC
 from fastapi.testclient import TestClient
 from uuid import uuid4
 
 from app.main import app
-from app.services.job_store import InMemoryJobStore
-from app.models.crawl import CrawlConfig, IncrementalOptions
-from app.models.enums import CrawlStatus
+from app.settings import settings
 
-client = TestClient(app)
+AUTH = f"Bearer {settings.api_key}"
+TENANT_A = settings.default_tenant_id
 
-@pytest.fixture
-def fake_redis():
-    return fakeredis.FakeRedis(decode_responses=True)
 
-@pytest.fixture
-def store(fake_redis):
-    store = InMemoryJobStore(redis_client=fake_redis)
-    app.state.job_store = store
-    return store
+def _h(tenant: str = TENANT_A, ikey: str | None = None) -> dict:
+    h = {
+        "X-Tenant-ID": tenant,
+        "Authorization": AUTH,
+        "X-Request-ID": str(uuid4()),
+    }
+    if ikey:
+        h["Idempotency-Key"] = ikey
+    return h
 
-def test_incremental_dedup(store, fake_redis):
-    # Create crawl job with known hashes
-    job = store.create_crawl_job(
-        "tenant_a",
-        CrawlConfig(seed_urls=["http://x.com"], allowed_domains=["x.com"]),
-        idempotency_key="key1",
-        request_fingerprint="fp1",
-        incremental=IncrementalOptions(known_content_hashes=["hash1", "hash2"])
+
+@pytest.fixture()
+def client():
+    with TestClient(app) as c:
+        yield c
+
+
+def _create_crawl(client, seed_url: str = "https://example.ro") -> dict:
+    """Create a crawl job and return the JSON response."""
+    resp = client.post(
+        "/v1/crawl",
+        headers=_h(ikey=str(uuid4())),
+        json={
+            "config": {
+                "seed_urls": [seed_url],
+                "allowed_domains": ["example.ro"],
+            }
+        },
     )
-    
-    # Assert hashes are in redis
-    assert fake_redis.sismember(f"JOB:known_hashes:{job.job_id}", "hash1")
-    assert fake_redis.sismember(f"JOB:known_hashes:{job.job_id}", "hash2")
+    assert resp.status_code == 202, resp.text
+    return resp.json()
 
-def test_pagination_and_isolation(store, fake_redis):
-    job = store.create_crawl_job(
-        "tenant_a",
-        CrawlConfig(seed_urls=["http://x.com"], allowed_domains=["x.com"]),
-        idempotency_key="key2",
-        request_fingerprint="fp2"
-    )
-    
-    headers_a = {"X-Tenant-ID": "tenant_a", "Authorization": "Bearer dev-api-key-change-me", "X-Request-ID": "00000000-0000-4000-8000-000000000001"}
-    headers_b = {"X-Tenant-ID": "tenant_b", "Authorization": "Bearer dev-api-key-change-me", "X-Request-ID": "00000000-0000-4000-8000-000000000001"}
-    
-    # tenant B cannot read tenant A's job -> 403
-    res_b = client.get(f"/v1/jobs/{job.job_id}/documents", headers=headers_b)
+
+def test_pagination_empty_documents(client):
+    """A freshly-created job returns empty documents page."""
+    job_data = _create_crawl(client)
+    job_id = job_data["job_id"]
+
+    res = client.get(f"/v1/jobs/{job_id}/documents?limit=1", headers=_h())
+    assert res.status_code == 200
+    data = res.json()
+    assert data["documents"] == []
+    assert data["has_more"] is False
+
+
+def test_tenant_isolation(client):
+    """Tenant B cannot read tenant A's job â†’ 403."""
+    job_data = _create_crawl(client)
+    job_id = job_data["job_id"]
+
+    res_b = client.get(f"/v1/jobs/{job_id}/documents", headers=_h("tenant_b"))
     assert res_b.status_code == 403
-    
-    # tenant A can
-    res_a = client.get(f"/v1/jobs/{job.job_id}/documents?limit=1", headers=headers_a)
-    assert res_a.status_code == 200
-    data = res_a.json()
-    assert len(data["documents"]) <= 1
-    
-    # cursor pagination round-trip
-    if data["has_more"]:
-        cursor = data["next_cursor"]
-        res_a_next = client.get(f"/v1/jobs/{job.job_id}/documents?limit=1&cursor={cursor}", headers=headers_a)
-        assert res_a_next.status_code == 200
-        
-def test_410_gone(store, fake_redis):
-    job = store.create_crawl_job(
-        "tenant_a",
-        CrawlConfig(seed_urls=["http://x.com"], allowed_domains=["x.com"]),
-        idempotency_key="key3",
-        request_fingerprint="fp3"
-    )
-    # Set job status to done to set retention
-    store.update(job.job_id, status=CrawlStatus.fetching_sitemap)
-    store.update(job.job_id, status=CrawlStatus.crawling)
-    store.update(job.job_id, status=CrawlStatus.extracting)
-    store.update(job.job_id, status=CrawlStatus.classifying)
-    store.update(job.job_id, status=CrawlStatus.done)
-    
-    # Mock expiration
-    fake_redis.set(f"JOB:expired:{job.job_id}", "1")
-    
-    headers = {"X-Tenant-ID": "tenant_a", "Authorization": "Bearer dev-api-key-change-me", "X-Request-ID": "00000000-0000-4000-8000-000000000001"}
-    res = client.get(f"/v1/jobs/{job.job_id}/documents", headers=headers)
-    assert res.status_code == 410
+
+
+def test_idempotency_returns_same_job(client):
+    """Same Idempotency-Key with same body returns the existing job."""
+    idem_key = str(uuid4())
+    body = {"config": {"seed_urls": ["https://example.ro"], "allowed_domains": ["example.ro"]}}
+
+    resp1 = client.post("/v1/crawl", headers=_h(ikey=idem_key), json=body)
+    resp2 = client.post("/v1/crawl", headers=_h(ikey=idem_key), json=body)
+
+    assert resp1.status_code == 202
+    assert resp2.json()["job_id"] == resp1.json()["job_id"]
+

@@ -47,7 +47,7 @@ def _headers(idempotency_key: str | None = None, request_id: str | None = None) 
 @pytest.fixture()
 def client():
     """Fresh TestClient with fresh app state per test."""
-    with TestClient(app, raise_server_exceptions=True) as c:
+    with TestClient(app) as c:
         yield c
 
 

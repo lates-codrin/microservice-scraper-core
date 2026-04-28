@@ -35,6 +35,28 @@ services:
     networks:
       - lex-advisor
 
+  crawl-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lex-advisor/scraper-api:dev
+    entrypoint: ["python", "-m", "app.crawl_runner"]
+    environment:
+      API_KEY: ${API_KEY:-dev-api-key-change-me}
+      DEFAULT_TENANT_ID: ${DEFAULT_TENANT_ID:-ph-balta-doamnei}
+      SERVICE_VERSION: ${SERVICE_VERSION:-1.0.0}
+      ACTIVE_WORKERS: ${ACTIVE_WORKERS:-4}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://lex:lex@postgres:5432/scraper}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      scraper-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - lex-advisor
+
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     ports:

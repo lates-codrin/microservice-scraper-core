@@ -1,3 +1,7 @@
+﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
+"""Scrape endpoint integration test with mocked services."""
+
 from __future__ import annotations
 
 import uuid
@@ -53,14 +57,15 @@ def test_scrape_sync_fetches_extracts_and_persists(monkeypatch):
         warnings=["extract-warning"],
     )
 
-    monkeypatch.setattr("app.routers.scrape.fetch", AsyncMock(return_value=fetch_result))
+    # Patch in scrape_service (where the logic now lives, not the router)
+    monkeypatch.setattr("app.services.scrape_service.fetch", AsyncMock(return_value=fetch_result))
     monkeypatch.setattr(
-        "app.routers.scrape.render_page",
+        "app.services.scrape_service.render_page",
         AsyncMock(return_value=(fetch_result.content, fetch_result.final_url, False)),
     )
-    monkeypatch.setattr("app.routers.scrape.extract", lambda content, mime_type, source_url: extraction_result)
+    monkeypatch.setattr("app.services.scrape_service.extract", lambda content, mime_type, source_url: extraction_result)
     monkeypatch.setattr(
-        "app.routers.scrape.classify_document",
+        "app.services.scrape_service.classify_document",
         lambda url, text: (DocType.hcl, 0.94, [{"doc_type": DocType.buget, "confidence": 0.3}]),
     )
 

@@ -1,12 +1,14 @@
+﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 Edge-case tests:
-  - empty seed_urls → 422
-  - max_pages=0 → 422 (ge=1)
-  - max_depth=0 → 422 (ge=1)
-  - limit=0 on pagination → 422 (ge=1)
-  - cursor issued for a different tenant → 403 (tenant isolation)
-  - job that transitions queued → failed (worker crash simulation)
-  - callback_url that returns a redirect → SSRF check on redirect target
+  - empty seed_urls â†’ 422
+  - max_pages=0 â†’ 422 (ge=1)
+  - max_depth=0 â†’ 422 (ge=1)
+  - limit=0 on pagination â†’ 422 (ge=1)
+  - cursor issued for a different tenant â†’ 403 (tenant isolation)
+  - job that transitions queued â†’ failed (worker crash simulation)
+  - callback_url that returns a redirect â†’ SSRF check on redirect target
 """
 from __future__ import annotations
 
@@ -32,17 +34,17 @@ def _h(tenant: str = TENANT, ikey: str | None = None) -> dict:
 
 @pytest.fixture()
 def client():
-    with TestClient(app, raise_server_exceptions=True) as c:
+    with TestClient(app) as c:
         yield c
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Validation edge cases
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def test_empty_seed_urls_returns_422(client):
-    """seed_urls must have min_length=1; empty list → 422."""
+    """seed_urls must have min_length=1; empty list â†’ 422."""
     payload = {
         "config": {
             "seed_urls": [],
@@ -54,7 +56,7 @@ def test_empty_seed_urls_returns_422(client):
 
 
 def test_max_pages_zero_returns_422(client):
-    """max_pages has ge=1; 0 → 422."""
+    """max_pages has ge=1; 0 â†’ 422."""
     payload = {
         "config": {
             "seed_urls": ["https://primaria-exemplu.ro"],
@@ -67,7 +69,7 @@ def test_max_pages_zero_returns_422(client):
 
 
 def test_max_depth_zero_returns_422(client):
-    """max_depth has ge=1; 0 → 422."""
+    """max_depth has ge=1; 0 â†’ 422."""
     payload = {
         "config": {
             "seed_urls": ["https://primaria-exemplu.ro"],
@@ -80,8 +82,7 @@ def test_max_depth_zero_returns_422(client):
 
 
 def test_pagination_limit_zero_returns_422(client):
-    """limit query param has ge=1; 0 → 422."""
-    # Need a real job first
+    """limit query param has ge=1; 0 â†’ 422."""
     resp = client.post(
         "/v1/crawl",
         json={"config": {"seed_urls": ["https://primaria-exemplu.ro"], "allowed_domains": ["primaria-exemplu.ro"]}},
@@ -112,14 +113,13 @@ def test_ssrf_seed_url_private_ip_returns_422(client):
     assert resp.status_code == 422, resp.text
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Cross-tenant cursor
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def test_cross_tenant_cursor_returns_403(client):
     """A cursor issued for tenant-A's job must 403 when tenant-B uses it."""
-    # Create job as tenant-A
     resp = client.post(
         "/v1/crawl",
         json={"config": {"seed_urls": ["https://primaria-exemplu.ro"], "allowed_domains": ["primaria-exemplu.ro"]}},
@@ -128,11 +128,9 @@ def test_cross_tenant_cursor_returns_403(client):
     assert resp.status_code == 202
     job_id = resp.json()["job_id"]
 
-    # Tenant-A reads page 1 — cursor may or may not exist
     resp = client.get(f"/v1/jobs/{job_id}/documents?limit=1", headers=_h(TENANT))
     assert resp.status_code == 200
 
-    # Tenant-B tries to read the same job with any cursor → 403
     resp = client.get(
         f"/v1/jobs/{job_id}/documents?limit=1&cursor=MA==",
         headers=_h(TENANT_B),
@@ -140,15 +138,18 @@ def test_cross_tenant_cursor_returns_403(client):
     assert resp.status_code == 403, resp.text
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Job crash simulation: queued → failed
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Job crash simulation: queued â†’ failed
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def test_job_crash_queued_to_failed(client):
-    """Simulate worker crash: force job status to 'failed' directly via job_store."""
-    from app.services.job_store import JobStore
+    """Simulate worker crash: force job status to 'failed' directly via DB."""
     from app.models.enums import CrawlStatus
+    from app.models.db import DbCrawlJob
+    from sqlalchemy import update
+    import app.db as db_module
+    import asyncio
 
     resp = client.post(
         "/v1/crawl",
@@ -158,19 +159,12 @@ def test_job_crash_queued_to_failed(client):
     assert resp.status_code == 202
     job_id = resp.json()["job_id"]
 
-    # Verify job starts as queued
     resp = client.get(f"/v1/jobs/{job_id}", headers=_h())
     assert resp.json()["status"] == "queued"
 
-    # Simulate crash via direct DB update (use the dependency)
-    import asyncio
-    from app.db import async_session_maker
-    import fakeredis
-    from app.models.db import DbCrawlJob
-    from sqlalchemy import update
-
+    # Force-fail via direct DB update (bypassing state machine â€” simulates crash)
     async def _force_fail():
-        async with async_session_maker() as session:
+        async with db_module.async_session_maker() as session:
             await session.execute(
                 update(DbCrawlJob)
                 .where(DbCrawlJob.job_id == job_id)
@@ -181,7 +175,12 @@ def test_job_crash_queued_to_failed(client):
             )
             await session.commit()
 
-    asyncio.run(_force_fail())
+    # Use a fresh event loop to avoid conflicts with the NullPool engine
+    loop = asyncio.new_event_loop()
+    try:
+        loop.run_until_complete(_force_fail())
+    finally:
+        loop.close()
 
     resp = client.get(f"/v1/jobs/{job_id}", headers=_h())
     assert resp.status_code == 200
@@ -190,9 +189,9 @@ def test_job_crash_queued_to_failed(client):
     assert body["error"]["code"] == "worker_crash"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # callback_url redirect SSRF
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def test_webhook_callback_redirect_to_private_ip_blocked():
@@ -200,13 +199,10 @@ def test_webhook_callback_redirect_to_private_ip_blocked():
     from unittest.mock import patch
     from app.services.webhooks import _check_callback_ssrf, SSRFBlockedError
 
-    # The callback_url itself resolves fine, but redirect would go to 169.254.169.254
-    # The SSRF guard checks the callback_url's hostname before POSTing.
-    # If callback is legitimate but follow_redirects is False, the redirect won't be followed.
-    # This test verifies _check_callback_ssrf blocks private IPs.
     with patch(
         "socket.getaddrinfo",
         return_value=[(None, None, None, None, ("169.254.169.254", 0))],
     ):
         with pytest.raises(SSRFBlockedError):
             _check_callback_ssrf("http://169.254.169.254/hook")
+

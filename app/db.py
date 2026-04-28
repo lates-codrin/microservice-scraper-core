@@ -1,3 +1,7 @@
+﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
+"""Async SQLAlchemy engine and session factory."""
+
 from __future__ import annotations
 
 from typing import AsyncGenerator
@@ -24,3 +28,4 @@ async_session_maker = async_sessionmaker(
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
         yield session
+

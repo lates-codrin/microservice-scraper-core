@@ -157,6 +157,37 @@ class TestRenderPage:
         assert used_pw is True
 
 
+class TestCrawlRunnerFetchAdapter:
+    def test_fetch_adapter_forwards_frontier_config(self):
+        from app.crawl_runner import _fetch_for_frontier
+        from app.services.frontier import FrontierConfig
+
+        cfg = FrontierConfig(
+            job_id="cj_test",
+            tenant_id="ph-test",
+            allowed_domains=["example.com"],
+            user_agent="UnitTestBot/1.0",
+            max_requests_per_second=2.5,
+            respect_robots_txt=False,
+            max_pdf_size_mb=12,
+            timeout_ms=4567,
+        )
+
+        with patch("app.crawl_runner.fetch", new=AsyncMock(return_value=MagicMock())) as mocked_fetch:
+            _run(_fetch_for_frontier("https://example.com/page", cfg))
+
+        mocked_fetch.assert_awaited_once_with(
+            "https://example.com/page",
+            user_agent="UnitTestBot/1.0",
+            follow_redirects=True,
+            timeout_ms=4567,
+            max_pdf_size_mb=12,
+            respect_robots_txt=False,
+            max_requests_per_second=2.5,
+            redis=None,
+        )
+
+
 # ===========================================================================
 # FRONTIER TESTS
 # ===========================================================================

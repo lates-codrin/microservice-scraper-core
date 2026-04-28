@@ -1,0 +1,54 @@
+# Ruff configuration for Lex-Advisor Scraper Service
+# https://docs.astral.sh/ruff/configuration/
+
+target-version = "py312"
+line-length = 100
+
+[lint]
+select = [
+    "F",      # Pyflakes
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "I",      # isort
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "A",      # flake8-builtins
+    "C4",     # flake8-comprehensions
+    "DTZ",    # flake8-datetimez
+    "T10",    # flake8-debugger
+    "ISC",    # flake8-implicit-str-concat
+    "PIE",    # flake8-pie
+    "PT",     # flake8-pytest-style
+    "RSE",    # flake8-raise
+    "RET",    # flake8-return
+    "SLF",    # flake8-self
+    "SIM",    # flake8-simplify
+    "TID",    # flake8-tidy-imports
+    "TCH",    # flake8-type-checking
+    "ARG",    # flake8-unused-arguments
+    "PTH",    # flake8-use-pathlib
+    "ERA",    # eradicate
+    "RUF",    # Ruff-specific
+    "S",      # flake8-bandit (security)
+]
+ignore = [
+    "E501",   # Line too long — handled by formatter
+    "S101",   # assert usage — acceptable in tests and validation
+    "B008",   # Depends() in function defaults — FastAPI pattern
+    "ARG001", # Unused function argument — common in FastAPI deps
+    "A003",   # Class attribute shadowing builtin — Pydantic pattern
+]
+
+[lint.per-file-ignores]
+"tests/**" = ["S101", "ARG001", "ARG002", "S105", "S106"]
+"app/services/extractor.py" = ["ERA001"]  # Commented code is documentation
+"alembic/**" = ["ERA001", "F401"]
+
+[lint.isort]
+known-first-party = ["app"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false

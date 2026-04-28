@@ -1,3 +1,5 @@
+﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 Content extraction service.
 
@@ -6,13 +8,13 @@ Supports HTML, PDF, DOCX, XLSX.
 HTML:
   - trafilatura for main-content extraction (strips nav/footer/ads)
   - Extracts <title>, <link rel="canonical">, published_at from <time>/meta tags
-  - Romanian diacritics MUST be preserved (ș=U+0219, ț=U+021B, ă, î, â)
+  - Romanian diacritics MUST be preserved (È™=U+0219, È›=U+021B, Äƒ, Ã®, Ã¢)
   - Assertion helper _assert_romanian_diacritics() validates round-trip at module load
 
 PDF:
   - pdfplumber for text extraction + page_count
-  - Empty text layer → pytesseract OCR + warning "ocr_fallback_used"
-  - Password-protected → warning "pdf_password_protected", raw_text = ""
+  - Empty text layer â†’ pytesseract OCR + warning "ocr_fallback_used"
+  - Password-protected â†’ warning "pdf_password_protected", raw_text = ""
 
 DOCX / XLSX:
   - python-docx / openpyxl best-effort text extraction
@@ -32,7 +34,7 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
-# Optional third-party dependencies — imported at module level so tests can
+# Optional third-party dependencies â€” imported at module level so tests can
 # mock them via patch("app.services.extractor.<name>").
 try:
     import trafilatura  # type: ignore[import-untyped]
@@ -70,15 +72,15 @@ except ImportError:  # pragma: no cover
 # ---------------------------------------------------------------------------
 
 _DIACRITIC_SAMPLES = [
-    "Hotărârea privind bugetul",  # ă, â
-    "Timișoara",  # ș = U+0219 (comma-below), NOT ş (U+015F cedilla)
+    "HotÄƒrÃ¢rea privind bugetul",  # Äƒ, Ã¢
+    "TimiÈ™oara",  # È™ = U+0219 (comma-below), NOT ÅŸ (U+015F cedilla)
 ]
 
 _WRONG_CHARS = {
-    "\u015f": "\u0219",  # ş → ș
-    "\u015e": "\u0218",  # Ş → Ș
-    "\u0163": "\u021b",  # ţ → ț
-    "\u0162": "\u021a",  # Ţ → Ț
+    "\u015f": "\u0219",  # ÅŸ â†’ È™
+    "\u015e": "\u0218",  # Åž â†’ È˜
+    "\u0163": "\u021b",  # Å£ â†’ È›
+    "\u0162": "\u021a",  # Å¢ â†’ Èš
 }
 
 
@@ -99,8 +101,8 @@ def _assert_romanian_diacritics(text: str) -> str:
 
 
 # Validate at import time
-_assert_romanian_diacritics("Hotărârea privind bugetul")
-_assert_romanian_diacritics("Timișoara")
+_assert_romanian_diacritics("HotÄƒrÃ¢rea privind bugetul")
+_assert_romanian_diacritics("TimiÈ™oara")
 
 
 # ---------------------------------------------------------------------------
@@ -389,3 +391,4 @@ def extract(content: bytes, mime_type: str, source_url: str = "") -> ExtractionR
 
     # Default: HTML
     return _extract_html(content, source_url)
+

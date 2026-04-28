@@ -1,3 +1,7 @@
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0
+"""Crawl job request/response models with SSRF validation."""
+
 from __future__ import annotations
 
 import ipaddress
@@ -51,7 +55,7 @@ class CrawlAuth(BaseModel):
 
 class CrawlConfig(BaseModel):
     seed_urls: list[HttpUrl] = Field(..., min_length=1, max_length=20)
-    allowed_domains: list[str]
+    allowed_domains: list[str] = Field(default_factory=list)
 
     @field_validator("seed_urls")
     @classmethod
@@ -60,6 +64,19 @@ class CrawlConfig(BaseModel):
             if _is_ssrf_url(str(url)):
                 raise ValueError(f"Forbidden URL (private/loopback/link-local): {url}")
         return v
+
+    @field_validator("allowed_domains", mode="before")
+    @classmethod
+    def default_domains_from_seeds(cls, v: list[str], info: object) -> list[str]:
+        """Spec §3.1: 'Empty = host of first seed'. Auto-populate if caller omits."""
+        if v:
+            return v
+        # Extract hosts from seed_urls via the partially-validated data
+        seeds = (info.data or {}).get("seed_urls", [])
+        return list(dict.fromkeys(
+            urlparse(str(u)).hostname or "" for u in seeds
+            if urlparse(str(u)).hostname
+        ))
 
     max_depth: int = Field(default=5, ge=1, le=20)
     max_pages: int = Field(default=2000, ge=1, le=100000)

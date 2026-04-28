@@ -1,5 +1,6 @@
 import pytest
-from app.services.classifier import classify_document, extract_hcl_fields
+from app.services.classifier import classify_document
+from app.services.field_extractor import extract_hcl_fields
 from app.models.enums import DocType
 
 def test_classifier_all_slugs():

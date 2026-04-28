@@ -1,3 +1,7 @@
+﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
+"""POST /v1/crawl â€” initiate a multi-URL crawl job."""
+
 from __future__ import annotations
 
 import hashlib
@@ -17,6 +21,7 @@ router = APIRouter(prefix="/v1", tags=["crawl"])
 
 
 def _request_fingerprint(payload: CrawlRequest) -> str:
+    """Deterministic hash of the request body for idempotency collision detection."""
     normalized = json.dumps(
         payload.model_dump(mode="json", by_alias=True),
         sort_keys=True,
@@ -26,13 +31,18 @@ def _request_fingerprint(payload: CrawlRequest) -> str:
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
-@router.post("/crawl", response_model=CrawlAcceptedResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/crawl",
+    response_model=CrawlAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def start_crawl(
     payload: CrawlRequest,
     request: Request,
     idempotency_key: UUID = Header(..., alias="Idempotency-Key"),
     store: JobStore = Depends(get_job_store),
 ) -> CrawlAcceptedResponse | JSONResponse:
+    """Start a new crawl job. Returns 202 Accepted with job metadata."""
     try:
         job = await store.create_crawl_job(
             request.state.tenant_id,
@@ -51,7 +61,9 @@ async def start_crawl(
                 details={"existing_job_id": exc.existing_job_id},
             )
         )
-        return JSONResponse(status_code=409, content=envelope.model_dump(mode="json"))
+        return JSONResponse(
+            status_code=409, content=envelope.model_dump(mode="json")
+        )
 
     return CrawlAcceptedResponse(
         job_id=job.job_id,

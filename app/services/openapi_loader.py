@@ -1,3 +1,7 @@
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# SPDX-License-Identifier: Apache-2.0
+"""Load and cache the OpenAPI specification from the YAML source file."""
+
 from __future__ import annotations
 
 from functools import lru_cache
@@ -9,9 +13,14 @@ import yaml
 
 @lru_cache(maxsize=1)
 def load_provider_openapi() -> dict[str, Any]:
-    spec_path = Path(__file__).resolve().parents[2] / "scraper-api-spec.yaml"
-    if not spec_path.exists():
-        raise FileNotFoundError(f"OpenAPI source file not found: {spec_path}")
+    repo_root = Path(__file__).resolve().parents[2]
+    # Prefer the delivery-spec filename; fall back to dev-time name
+    for candidate in ("openapi.yaml", "scraper-api-spec.yaml"):
+        spec_path = repo_root / candidate
+        if spec_path.exists():
+            break
+    else:
+        raise FileNotFoundError(f"OpenAPI source file not found in {repo_root}")
 
     with spec_path.open("r", encoding="utf-8") as handle:
         payload = yaml.safe_load(handle) or {}
