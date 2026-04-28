@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.middleware.auth_headers import AuthHeadersMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.models.common import ErrorEnvelope, ErrorPayload
 from app.routers import admin, classify, crawl, docs, extract, health, jobs, openapi_spec, scrape
@@ -65,7 +66,13 @@ def create_app() -> FastAPI:
     # Middleware stack (order matters â€” outermost first)
     application.add_middleware(AuthHeadersMiddleware, api_key=settings.api_key)
     application.add_middleware(RateLimitMiddleware)
-
+    application.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    )
     # ------------------------------------------------------------------
     # Exception handlers
     # ------------------------------------------------------------------
