@@ -20,6 +20,7 @@ class ScrapeRequest(BaseModel):
     extract_structured: StrictBool = False
     timeout_ms: int = Field(default=30000, ge=1000, le=120000)
     mode: Literal["sync", "async"] = "sync"
+    redact_pii: StrictBool = False
 
 
 class ClassifyRequest(BaseModel):

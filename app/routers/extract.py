@@ -24,20 +24,16 @@ async def extract(
     payload: ExtractRequest,
     request: Request,
 ) -> ExtractResponse | JSONResponse:
-    """Extract structured fields from document content."""
+    """Extract structured fields from document content.
+    
+    Supports all 18 doc_types:
+    - hcl, dispozitie_primar, act_normativ_local, proiect_hotarare
+    - regulament, buget, raport_executie_bugetara, pug, puz
+    - strategie, organigrama, raport_activitate, proces_verbal
+    - consultare_publica, anunt_public, anunt_achizitie
+    - declaratie_avere, other
+    """
     request_id = getattr(request.state, "request_id", "unknown")
-
-    if payload.doc_type != DocType.hcl:
-        return JSONResponse(
-            status_code=501,
-            content={
-                "error": {
-                    "code": "not_implemented",
-                    "message": "Only HCL extraction is supported",
-                    "request_id": request_id,
-                }
-            },
-        )
 
     fields, confidence = extract_fields(payload.content, payload.doc_type)
     missing = [key for key, value in fields.items() if value is None]

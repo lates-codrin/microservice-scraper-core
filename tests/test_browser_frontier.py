@@ -187,6 +187,38 @@ class TestCrawlRunnerFetchAdapter:
             redis=None,
         )
 
+    def test_fetch_adapter_forwards_redis_client(self):
+        from app.crawl_runner import _fetch_for_frontier
+        from app.services.frontier import FrontierConfig
+
+        cfg = FrontierConfig(
+            job_id="cj_test",
+            tenant_id="ph-test",
+            allowed_domains=["example.com"],
+            max_requests_per_second=3.0,
+        )
+        fake_redis = object()
+
+        with patch("app.crawl_runner.fetch", new=AsyncMock(return_value=MagicMock())) as mocked_fetch:
+            _run(
+                _fetch_for_frontier(
+                    "https://example.com/page",
+                    cfg,
+                    redis_client=fake_redis,
+                )
+            )
+
+        mocked_fetch.assert_awaited_once_with(
+            "https://example.com/page",
+            user_agent="LexAdvisor-Bot/1.0 (+https://lex-advisor.citydock.ro/bot)",
+            follow_redirects=True,
+            timeout_ms=30_000,
+            max_pdf_size_mb=50,
+            respect_robots_txt=True,
+            max_requests_per_second=3.0,
+            redis=fake_redis,
+        )
+
 
 # ===========================================================================
 # FRONTIER TESTS

@@ -451,6 +451,32 @@ class JobStore:
         )
         return (await self.session.execute(stmt)).scalar_one()
 
+    async def delete_jobs_before(self, cutoff_dt: datetime) -> int:
+        """Delete jobs and documents created before cutoff datetime (GDPR compliance).
+        
+        Args:
+            cutoff_dt: Delete jobs with submitted_at before this time
+            
+        Returns:
+            Number of job records deleted
+        """
+        # Delete associated documents first (foreign key constraint)
+        stmt = delete(DbScrapedDocument).where(
+            DbScrapedDocument.job_id.in_(
+                select(DbCrawlJob.job_id).where(DbCrawlJob.submitted_at < cutoff_dt)
+            )
+        )
+        await self.session.execute(stmt)
+        
+        # Delete jobs
+        stmt = delete(DbCrawlJob).where(DbCrawlJob.submitted_at < cutoff_dt)
+        result = await self.session.execute(stmt)
+        deleted = result.rowcount
+        
+        await self.session.commit()
+        logger.info("Log retention: deleted %d jobs before %s", deleted, cutoff_dt)
+        return deleted
+
 
 __all__ = ["DuplicateJobError", "JobStore"]
 

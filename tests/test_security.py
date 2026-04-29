@@ -219,6 +219,14 @@ class TestHeaderInjection:
         from app.middleware.auth_headers import _SAFE_SLUG_RE
         assert _SAFE_SLUG_RE.match(str(uuid4())) is not None
 
+    def test_header_injection_request_id_returns_400(self, client):
+        resp = client.get("/v1/health", headers={"X-Request-ID": "123\nInject: true", "X-Tenant-ID": "test-tenant"})
+        assert resp.status_code == 400
+
+    def test_header_injection_tenant_id_returns_400(self, client):
+        resp = client.get("/v1/health", headers={"X-Request-ID": str(uuid4()), "X-Tenant-ID": "test\nInject: true"})
+        assert resp.status_code == 400
+
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Tenant isolation ” cross-tenant access must return 403
@@ -262,4 +270,3 @@ class TestTenantIsolation:
         resp = client.get(f"/v1/jobs/{job_id}", headers=_h(TENANT_A))
         assert resp.status_code == 200
         assert resp.json()["tenant_id"] == TENANT_A
-

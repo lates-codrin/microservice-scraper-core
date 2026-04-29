@@ -9,15 +9,20 @@ import time
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.middleware.auth_headers import AuthHeadersMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.response_headers import ResponseHeadersMiddleware
 from app.models.common import ErrorEnvelope, ErrorPayload
-from app.routers import admin, classify, crawl, docs, extract, health, jobs, openapi_spec, scrape
+from app.routers import admin, classify, crawl, docs, extract, health, jobs, metrics, openapi_spec, scrape
+from app.services.metrics import MetricsMiddleware, get_metrics
+from app.services.otel import init_otel, init_instrumentors
 from app.settings import settings
+from app.services.otel_logging import configure_structured_logging
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +34,30 @@ _HTTP_ERROR_CODES: dict[int, str] = {
     429: "rate_limited",
 }
 
+class HeaderValidationMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        req_id = request.headers.get("x-request-id")
+        tenant_id = request.headers.get("x-tenant-id")
+        idem_key = request.headers.get("idempotency-key")
+        
+        if req_id and ("\n" in req_id or "\r" in req_id):
+            return JSONResponse(status_code=400, content={"error": {"code": "invalid_request", "message": "Invalid X-Request-ID", "request_id": ""}})
+        if tenant_id and ("\n" in tenant_id or "\r" in tenant_id):
+            return JSONResponse(status_code=400, content={"error": {"code": "invalid_request", "message": "Invalid X-Tenant-ID", "request_id": req_id or ""}})
+        if idem_key and ("\n" in idem_key or "\r" in idem_key):
+            return JSONResponse(status_code=400, content={"error": {"code": "invalid_request", "message": "Invalid Idempotency-Key", "request_id": req_id or ""}})
+            
+        return await call_next(request)
+
 
 def create_app() -> FastAPI:
     """Build and configure the FastAPI application instance."""
+    # Initialize OpenTelemetry tracing
+    init_otel("lex-advisor-scraper")
+    init_instrumentors()
+    # Initialize structured logging with OTel trace context
+    configure_structured_logging()
+
     application = FastAPI(
         title="Lex-Advisor Scraper Service",
         version=settings.service_version,
@@ -63,15 +89,19 @@ def create_app() -> FastAPI:
 
         application.state.redis = fakeredis.FakeRedis(decode_responses=True)
 
-    # Middleware stack (order matters ” outermost first)
+    # Middleware stack (order matters ” outermost first)    application.add_middleware(MetricsMiddleware, metrics=get_metrics())    application.add_middleware(AuthHeadersMiddleware, api_key=settings.api_key)
+    # Middleware stack (order matters — outermost first)
+    application.add_middleware(HeaderValidationMiddleware)
+    application.add_middleware(ResponseHeadersMiddleware)
+    application.add_middleware(MetricsMiddleware, metrics=get_metrics())
     application.add_middleware(AuthHeadersMiddleware, api_key=settings.api_key)
     application.add_middleware(RateLimitMiddleware)
     application.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
     # ------------------------------------------------------------------
     # Exception handlers
@@ -148,6 +178,7 @@ def create_app() -> FastAPI:
     application.include_router(classify.router)
     application.include_router(extract.router)
     application.include_router(health.router)
+    application.include_router(metrics.router)
     application.include_router(openapi_spec.router)
     application.include_router(docs.router)
     application.include_router(admin.router)  # dev-only, guarded by DOCS_ENABLED
@@ -156,4 +187,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-

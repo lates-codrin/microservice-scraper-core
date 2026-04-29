@@ -49,6 +49,8 @@ from app.services.frontier import Frontier, FrontierConfig
 from app.services.mime_utils import content_type_from_mime
 from app.services.webhooks import WebhookPayload, publish_webhook
 from app.settings import settings
+from app.constants import REDIS_PREFIX_JOB_KNOWN_HASHES
+from app.services.pii_redactor import redact_pii as redact_pii_text
 
 logger = logging.getLogger(__name__)
 
@@ -130,14 +132,37 @@ async def _persist_document(
     job_id: str,
     tenant_id: str,
     doc: dict,
+    redact_pii: bool = False,
+    async_redis: object | None = None,
 ) -> None:
-    """Write one scraped document row; silently skip duplicates."""
+    """Write one scraped document row; silently skip duplicates.
+
+    Honors incremental baseline stored in Redis under
+    REDIS_PREFIX_JOB_KNOWN_HASHES:{job_id} — if the document's
+    content_hash is present there, the document is skipped.
+    """
     extraction = doc.get("extraction")
     if extraction is None:
         return
 
     raw_text: str = extraction.raw_text or ""
+    if redact_pii:
+        raw_text = redact_pii_text(raw_text)
+
     mime_type: str = doc.get("mime_type", "text/html")
+
+    # Delta-check: skip if content_hash already in known set for this job
+    content_hash = extraction.content_hash
+    if async_redis and content_hash:
+        try:
+            key = f"{REDIS_PREFIX_JOB_KNOWN_HASHES}:{job_id}"
+            is_known = await async_redis.sismember(key, content_hash)
+            if is_known:
+                logger.info("job=%s skipping known content_hash=%s", job_id, content_hash)
+                return
+        except Exception:
+            # On redis errors, fall back to normal persist
+            pass
 
     doc_type, doc_type_confidence, _ = classify_document(
         doc.get("final_url"), raw_text
@@ -161,7 +186,7 @@ async def _persist_document(
         published_at=extraction.published_at,
         page_count=extraction.page_count,
         content_length=extraction.content_length,
-        content_hash=extraction.content_hash,
+        content_hash=content_hash,
         metadata_={
             "discovered_at": datetime.now(UTC).isoformat(),
             "http_status": doc.get("http_status"),
@@ -169,6 +194,7 @@ async def _persist_document(
             "redirect_chain": doc.get("redirect_chain", []),
             "used_playwright": doc.get("used_playwright", False),
             "warnings": doc.get("warnings", []),
+            "pii_redacted": redact_pii,
         },
         extraction_confidence=doc_type_confidence,
         warnings=doc.get("warnings", []) + extraction.warnings,
@@ -176,6 +202,13 @@ async def _persist_document(
     session.add(db_doc)
     try:
         await session.commit()
+        # After successful commit, add the content_hash to known set for future deltas
+        try:
+            if async_redis and content_hash:
+                key = f"{REDIS_PREFIX_JOB_KNOWN_HASHES}:{job_id}"
+                await async_redis.sadd(key, content_hash)
+        except Exception:
+            pass
     except Exception:
         await session.rollback()
         logger.warning("Duplicate document skipped for job %s", job_id)
@@ -211,7 +244,12 @@ async def _update_progress_from_redis(
 # ---------------------------------------------------------------------------
 
 
-async def _fetch_for_frontier(url: str, cfg: FrontierConfig) -> object:
+async def _fetch_for_frontier(
+    url: str,
+    cfg: FrontierConfig,
+    *,
+    redis_client: object | None = None,
+) -> object:
     """Thin adapter: call app.services.fetcher.fetch with frontier config."""
     return await fetch(
         url,
@@ -221,7 +259,7 @@ async def _fetch_for_frontier(url: str, cfg: FrontierConfig) -> object:
         max_pdf_size_mb=cfg.max_pdf_size_mb,
         respect_robots_txt=cfg.respect_robots_txt,
         max_requests_per_second=cfg.max_requests_per_second,
-        redis=None,  # deduplciation is handled by frontier via Redis SADD
+        redis=redis_client,
     )
 
 
@@ -348,11 +386,22 @@ async def run_job(
                     try:
                         doc = await frontier.process_message(
                             message.body,
-                            fetch_fn=_fetch_for_frontier,
+                            fetch_fn=lambda url, cfg: _fetch_for_frontier(
+                                url,
+                                cfg,
+                                redis_client=async_redis,
+                            ),
                             extract_fn=extract,
                             browser_render_fn=render_page,
                         )
-                        await _persist_document(session, job_id, tenant_id, doc)
+                        await _persist_document(
+                            session,
+                            job_id,
+                            tenant_id,
+                            doc,
+                            redact_pii=config.redact_pii,
+                            async_redis=async_redis,
+                        )
                         docs_saved += 1
 
                         # Periodically flush progress to DB

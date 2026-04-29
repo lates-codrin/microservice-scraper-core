@@ -19,6 +19,7 @@ from app.services.fetcher import FetchError, fetch
 from app.services.field_extractor import extract_hcl_fields
 from app.services.job_store import JobStore
 from app.services.mime_utils import content_type_from_mime
+from app.services.pii_redactor import redact_pii as redact_pii_text
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,11 @@ async def execute_sync_scrape(
                 final_url, extracted.raw_text
             )
 
+        # Apply PII redaction if requested
+        raw_text_final = extracted.raw_text
+        if payload.redact_pii:
+            raw_text_final = redact_pii_text(raw_text_final)
+
         metadata: dict[str, object] = {
             "discovered_at": datetime.now(UTC).isoformat(),
             "http_status": fetch_result.http_status,
@@ -75,6 +81,7 @@ async def execute_sync_scrape(
             "redirect_chain": fetch_result.redirect_chain,
             "fetch_warnings": fetch_result.warnings,
             "extraction_warnings": extracted.warnings,
+            "pii_redacted": payload.redact_pii,
         }
 
         if payload.extract_structured and doc_type == DocType.hcl:
@@ -90,7 +97,7 @@ async def execute_sync_scrape(
             canonical_url=extracted.canonical_url or final_url,
             mime_type=extracted.mime_type,
             content_type=content_type_from_mime(extracted.mime_type),
-            raw_text=extracted.raw_text,
+            raw_text=raw_text_final,
             raw_html=(
                 rendered_html.decode("utf-8", errors="replace")
                 if payload.include_raw_html

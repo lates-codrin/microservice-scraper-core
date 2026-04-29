@@ -91,6 +91,7 @@ class CrawlConfig(BaseModel):
     render_javascript: RenderMode = RenderMode.auto
     sitemap_hint_url: HttpUrl | None = None
     auth: CrawlAuth | None = None
+    redact_pii: StrictBool = False
 
 
 class IncrementalOptions(BaseModel):

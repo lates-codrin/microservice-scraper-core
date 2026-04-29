@@ -31,7 +31,7 @@ def test_classifier_all_slugs():
         assert conf == expected_conf
 
 def test_extract_hcl():
-    text = "Hotararea nr. 125/2024 din 22.04.2024 privind aprobarea bugetului local.\nVoturi: pentru: 13, împotrivă: 2, abțineri: 1."
+    text = "Hotararea nr. 125/2024 din 22.04.2024 privind aprobarea bugetului local.\nVoturi: pentru: 13, \u00eempotriv\u0103: 2, ab\u021bineri: 1."
     fields, conf = extract_hcl_fields(text)
     assert fields["hcl_number"] == "125/2024"
     assert fields["adoption_date"] == "2024-04-22"
