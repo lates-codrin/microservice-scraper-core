@@ -13,8 +13,8 @@ HTML:
 
 PDF:
   - pdfplumber for text extraction + page_count
-  - Empty text layer â†’ pytesseract OCR + warning "ocr_fallback_used"
-  - Password-protected â†’ warning "pdf_password_protected", raw_text = ""
+  - Empty text layer  pytesseract OCR + warning "ocr_fallback_used"
+  - Password-protected  warning "pdf_password_protected", raw_text = ""
 
 DOCX / XLSX:
   - python-docx / openpyxl best-effort text extraction
@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
-# Optional third-party dependencies â€” imported at module level so tests can
+# Optional third-party dependencies ” imported at module level so tests can
 # mock them via patch("app.services.extractor.<name>").
 try:
     import trafilatura  # type: ignore[import-untyped]
@@ -77,10 +77,10 @@ _DIACRITIC_SAMPLES = [
 ]
 
 _WRONG_CHARS = {
-    "\u015f": "\u0219",  # ÅŸ â†’ È™
-    "\u015e": "\u0218",  # Åž â†’ È˜
-    "\u0163": "\u021b",  # Å£ â†’ È›
-    "\u0162": "\u021a",  # Å¢ â†’ Èš
+    "\u015f": "\u0219",  # ÅŸ  È™
+    "\u015e": "\u0218",  # Åž  È˜
+    "\u0163": "\u021b",  # Å£  È›
+    "\u0162": "\u021a",  # Å¢  Èš
 }
 
 

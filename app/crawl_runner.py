@@ -1,16 +1,16 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
-Crawl runner â€” background worker process.
+Crawl runner ” background worker process.
 
 Responsibilities
 ----------------
 1. Poll PostgreSQL for jobs in `queued` status.
-2. Claim each job (â†’ `fetching_sitemap` / `crawling`).
+2. Claim each job ( `fetching_sitemap` / `crawling`).
 3. Seed RabbitMQ queue via `Frontier.start()`.
-4. Consume messages from RabbitMQ, call fetch â†’ extract â†’ classify,
+4. Consume messages from RabbitMQ, call fetch  extract  classify,
    persist each `ScrapedDocument`, update job progress in Redis.
-5. On exhaustion â†’ transition to `done` (or `partial` / `failed`).
+5. On exhaustion  transition to `done` (or `partial` / `failed`).
 6. Fire the configured `callback_url` webhook if present.
 
 Concurrency
@@ -69,7 +69,7 @@ async def _claim_queued_job(session: AsyncSession) -> DbCrawlJob | None:
     """
     Atomically fetch one queued job and transition it to `fetching_sitemap`.
 
-    Uses SELECT â€¦ FOR UPDATE SKIP LOCKED so concurrent runner instances
+    Uses SELECT ¦ FOR UPDATE SKIP LOCKED so concurrent runner instances
     don't race on the same row.
     """
     stmt = (
@@ -235,7 +235,7 @@ async def run_job(
     rmq_connection: aio_pika.abc.AbstractRobustConnection,
     redis: redis_lib.Redis,
 ) -> None:
-    """Drive one crawl job from queued â†’ done/failed/partial."""
+    """Drive one crawl job from queued  done/failed/partial."""
     job_id: str = job.job_id
     tenant_id: str = job.tenant_id
     config_data: dict = job.config or {}
@@ -326,7 +326,7 @@ async def run_job(
                 except (asyncio.TimeoutError, aio_pika.exceptions.QueueEmpty):
                     empty_streak += 1
                     if empty_streak >= 2:
-                        # Queue has been empty for two consecutive polls â†’ done
+                        # Queue has been empty for two consecutive polls  done
                         logger.info(
                             "job=%s queue drained (docs=%d)", job_id, docs_saved
                         )
@@ -474,7 +474,7 @@ async def main() -> None:
             await asyncio.sleep(_POLL_INTERVAL)
 
     except asyncio.CancelledError:
-        logger.info("Crawl runner shutting down â€” waiting for active jobsâ€¦")
+        logger.info("Crawl runner shutting down ” waiting for active jobs¦")
         if active:
             await asyncio.gather(*active, return_exceptions=True)
     finally:

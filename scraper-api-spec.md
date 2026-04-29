@@ -1120,7 +1120,7 @@ bundle is complete. Think of this as our Definition of Done.
       our 20-cityhall eval set — raw JSON + PDF summary.
 - [ ] **Security scan report** (Trivy or equivalent) on the release image,
       clean on CRITICAL + HIGH.
-- [ ] **`LICENSE`** file in the repo (Apache-2.0 default, or pre-approved
+- [ ] **`LICENSE`** file in the repo (Apache-2.0 WITH Commons-Clause-1.0 default, or pre-approved
       alternative).
 - [ ] **Signed IP assignment clause** (for any custom work) + signed DPA +
       EU data residency attestation (`europe-west3` or other approved EU

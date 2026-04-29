@@ -1,6 +1,6 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
-"""Webhook delivery service â€” async RabbitMQ worker with HMAC signing.
+"""Webhook delivery service ” async RabbitMQ worker with HMAC signing.
 
 Spec Â§5 compliance:
   - Header: X-Vendor-Signature: sha256=<hmac>

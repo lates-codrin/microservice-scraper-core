@@ -1,6 +1,6 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
-"""Rate limiting middleware â€” adds RateLimit-* headers per spec."""
+"""Rate limiting middleware ” adds RateLimit-* headers per spec."""
 
 from __future__ import annotations
 

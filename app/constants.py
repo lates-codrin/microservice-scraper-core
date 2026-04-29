@@ -1,6 +1,6 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
-"""Centralised constants â€” no magic numbers or strings elsewhere in app/."""
+"""Centralised constants ” no magic numbers or strings elsewhere in app/."""
 
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ CONFIDENCE_KEYWORD_ONLY: float = 0.80
 # When only URL matches.
 CONFIDENCE_URL_ONLY: float = 0.75
 
-# Default (no match â†’ "other").
+# Default (no match  "other").
 CONFIDENCE_DEFAULT: float = 0.40
 
 # ---------------------------------------------------------------------------

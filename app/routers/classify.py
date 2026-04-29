@@ -1,6 +1,6 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
-"""POST /v1/classify â€” document type classification endpoint."""
+"""POST /v1/classify ” document type classification endpoint."""
 
 from __future__ import annotations
 

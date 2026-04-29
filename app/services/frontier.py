@@ -1,7 +1,7 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
-Crawl frontier â€” async BFS via RabbitMQ + Redis.
+Crawl frontier ” async BFS via RabbitMQ + Redis.
 
 Queue topology:
   exchange : crawl        (direct)
@@ -24,7 +24,7 @@ seed frontier from sitemap first, then fall back to link walking.
 URL filtering rules (applied before enqueue):
   1. host in allowed_domains
   2. not matched by any exclude_pattern
-  3. if include_patterns non-empty â†’ at least one must match
+  3. if include_patterns non-empty  at least one must match
 
 PDF links: if follow_pdfs=True, enqueue .pdf URLs as leaf nodes
   (no further link extraction after fetch).
@@ -106,7 +106,7 @@ def _domain_allowed(url: str, cfg: FrontierConfig) -> bool:
 def _url_allowed(url: str, cfg: FrontierConfig, *, skip_include_patterns: bool = False) -> bool:
     """Return True if URL passes domain + include/exclude pattern filters.
 
-    skip_include_patterns=True used for depth-0 seeds â€” they are explicit
+    skip_include_patterns=True used for depth-0 seeds ” they are explicit
     entrypoints, not discovered links, so include_patterns should not gate them.
     """
     parsed = urlparse(url)
@@ -127,7 +127,7 @@ def _url_allowed(url: str, cfg: FrontierConfig, *, skip_include_patterns: bool =
             logger.warning("Invalid exclude_pattern regex: %r", pat)
 
     # Include patterns (any-match gate, only when non-empty)
-    # Skipped for seed URLs â€” they're caller-supplied entrypoints.
+    # Skipped for seed URLs ” they're caller-supplied entrypoints.
     if cfg.include_patterns and not skip_include_patterns:
         matched = False
         for pat in cfg.include_patterns:
@@ -186,11 +186,11 @@ def _parse_sitemap(xml_bytes: bytes) -> list[str]:
         from lxml import etree  # type: ignore[import-untyped]
         root = etree.fromstring(xml_bytes)
         ns = {"sm": _SITEMAP_NS}
-        # sitemap_index â†’ nested sitemaps
+        # sitemap_index  nested sitemaps
         sitemaps = root.findall(".//sm:sitemap/sm:loc", ns)
         if sitemaps:
             return [el.text.strip() for el in sitemaps if el.text]
-        # urlset â†’ page URLs
+        # urlset  page URLs
         urls = root.findall(".//sm:url/sm:loc", ns)
         return [el.text.strip() for el in urls if el.text]
     except Exception as exc:
@@ -219,7 +219,7 @@ async def seed_from_sitemap(
         if len(results) >= max_pages:
             break
         if loc.endswith(".xml") or "sitemap" in loc.lower():
-            # Nested sitemap index â†’ recurse one level
+            # Nested sitemap index  recurse one level
             try:
                 sub_xml = await _fetch_bytes(loc, user_agent, timeout_ms)
                 sub_locs = _parse_sitemap(sub_xml)
@@ -334,7 +334,7 @@ class Frontier:
     async def start(self, seed_urls: list[str]) -> None:
         """
         Seed the RabbitMQ queue.
-        1. If sitemap_hint_url â†’ fetch sitemap first (filtered through url_allowed).
+        1. If sitemap_hint_url  fetch sitemap first (filtered through url_allowed).
         2. Then enqueue seed_urls at depth=0.
         """
         await self._ensure_channel()
@@ -359,7 +359,7 @@ class Frontier:
             if enqueued >= cfg.max_pages:
                 break
             norm = _normalise_url(url)
-            # Seeds bypass include_patterns â€” they are explicit entrypoints.
+            # Seeds bypass include_patterns ” they are explicit entrypoints.
             # Exclude-patterns and domain checks still apply.
             if not _url_allowed(url, cfg, skip_include_patterns=True):
                 logger.debug("job=%s seed filtered (domain/exclude): %s", cfg.job_id, url)
@@ -396,7 +396,7 @@ class Frontier:
         # Hard page cap (atomic INCR)
         count = await _redis_incr_pages(self._redis, cfg.job_id)
         if count > cfg.max_pages:
-            # Over cap â€” don't enqueue
+            # Over cap ” don't enqueue
             return False
 
         await _publish(
@@ -420,7 +420,7 @@ class Frontier:
         1. Decode {url, depth, job_id, tenant_id}
         2. Fetch via httpx (fetch_fn)
         3. Apply render_javascript logic (browser_render_fn)
-        4. Extract links â†’ enqueue children (depth+1)
+        4. Extract links  enqueue children (depth+1)
         5. Return extracted document dict
         """
         cfg = self._cfg
@@ -461,7 +461,7 @@ class Frontier:
             links = extract_links(html_bytes, final_url)
             for link in links:
                 if cfg.follow_pdfs and _is_pdf_url(link):
-                    # PDF leaf â€” enqueue at max_depth so it's fetched but not walked
+                    # PDF leaf ” enqueue at max_depth so it's fetched but not walked
                     await self.enqueue(link, depth=cfg.max_depth)
                 else:
                     await self.enqueue(link, depth=depth + 1)

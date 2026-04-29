@@ -80,7 +80,7 @@ mypy --strict app/
 - Every `.py` file starts with copyright header:
   ```python
   # Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
-  # SPDX-License-Identifier: Apache-2.0
+  # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
   ```
 - Every `__init__.py` has `__all__` exports
 - All public functions have type annotations

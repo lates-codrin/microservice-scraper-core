@@ -1,6 +1,6 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
-"""Abstract interfaces for service layer â€” enables DIP and drop-in swapping."""
+"""Abstract interfaces for service layer ” enables DIP and drop-in swapping."""
 
 from __future__ import annotations
 

@@ -2,7 +2,7 @@
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688.svg)](https://fastapi.tiangolo.com)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License: Apache-2.0 WITH Commons-Clause-1.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 High-performance, hardened scraper microservice for Romanian municipal documents. Built with async Python, designed for multi-tenant production deployment.
 
@@ -107,4 +107,4 @@ mypy --strict app/
 
 ## License
 
-[Apache-2.0](LICENSE) — Copyright 2026 Lates Codrin-Gabriel
+[Apache-2.0 WITH Commons-Clause-1.0](LICENSE) — Copyright 2026 Lates Codrin-Gabriel

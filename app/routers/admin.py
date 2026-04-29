@@ -1,7 +1,7 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
-POST /v1/admin/flush  â€” dev-only: clear idempotency keys + cancel active jobs.
+POST /v1/admin/flush  ” dev-only: clear idempotency keys + cancel active jobs.
 
 Guarded by DOCS_ENABLED=true (same flag that enables the Swagger UI).
 Never expose in production (set DOCS_ENABLED=false).

@@ -1,0 +1,189 @@
+Date : 2026-04-29 20:01:37
+Directory : c:\Users\lates\Desktop\microservice-scraper-core
+Total : 121 files,  14583 codes, 1451 comments, 3355 blanks, all 19389 lines
+
+Languages
++------------------+------------+------------+------------+------------+------------+
+| language         | files      | code       | comment    | blank      | total      |
++------------------+------------+------------+------------+------------+------------+
+| Python           |         81 |      6,795 |      1,403 |      1,867 |     10,065 |
+| Markdown         |         20 |      3,259 |          0 |        882 |      4,141 |
+| YAML             |          4 |      3,109 |         24 |        154 |      3,287 |
+| Skill            |          7 |      1,042 |          0 |        376 |      1,418 |
+| Ini              |          3 |        165 |          0 |         42 |        207 |
+| Docker           |          1 |         58 |          6 |         15 |         79 |
+| TOML             |          1 |         47 |          2 |          6 |         55 |
+| JSON             |          2 |         45 |          0 |          1 |         46 |
+| Shell Script     |          1 |         35 |          4 |         10 |         49 |
+| pip requirements |          1 |         28 |         12 |          2 |         42 |
++------------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                              | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                                 |        121 |     14,583 |      1,451 |      3,355 |     19,389 |
+| . (Files)                                                                                                         |         15 |      4,524 |         44 |        467 |      5,035 |
+| .agents                                                                                                           |         27 |      2,720 |        310 |        978 |      4,008 |
+| .agents\skills                                                                                                    |         27 |      2,720 |        310 |        978 |      4,008 |
+| .agents\skills\caveman                                                                                            |          1 |         50 |          0 |         17 |         67 |
+| .agents\skills\caveman-commit                                                                                     |          1 |         50 |          0 |         15 |         65 |
+| .agents\skills\caveman-compress                                                                                   |         10 |        616 |        155 |        244 |      1,015 |
+| .agents\skills\caveman-compress (Files)                                                                           |          3 |        219 |          0 |         89 |        308 |
+| .agents\skills\caveman-compress\scripts                                                                           |          7 |        397 |        155 |        155 |        707 |
+| .agents\skills\caveman-help                                                                                       |          1 |         42 |          0 |         18 |         60 |
+| .agents\skills\caveman-review                                                                                     |          1 |         38 |          0 |         17 |         55 |
+| .agents\skills\compress                                                                                           |          8 |        482 |        155 |        182 |        819 |
+| .agents\skills\compress (Files)                                                                                   |          1 |         85 |          0 |         27 |        112 |
+| .agents\skills\compress\scripts                                                                                   |          7 |        397 |        155 |        155 |        707 |
+| .agents\skills\create-tasks                                                                                       |          5 |      1,442 |          0 |        485 |      1,927 |
+| .agents\skills\create-tasks (Files)                                                                               |          2 |        702 |          0 |        255 |        957 |
+| .agents\skills\create-tasks\references                                                                            |          3 |        740 |          0 |        230 |        970 |
+| .github                                                                                                           |          1 |         11 |          0 |          4 |         15 |
+| .github\instructions                                                                                              |          1 |         11 |          0 |          4 |         15 |
+| alembic                                                                                                           |          2 |        101 |         34 |         33 |        168 |
+| alembic (Files)                                                                                                   |          1 |         42 |         24 |         24 |         90 |
+| alembic\versions                                                                                                  |          1 |         59 |         10 |          9 |         78 |
+| app                                                                                                               |         43 |      3,851 |        677 |        921 |      5,449 |
+| app (Files)                                                                                                       |          9 |        784 |        172 |        213 |      1,169 |
+| app\middleware                                                                                                    |          3 |        151 |         24 |         38 |        213 |
+| app\models                                                                                                        |          8 |        308 |         29 |        107 |        444 |
+| app\routers                                                                                                       |         10 |        742 |         74 |        129 |        945 |
+| app\services                                                                                                      |         13 |      1,866 |        378 |        434 |      2,678 |
+| docs                                                                                                              |         10 |      1,292 |          0 |        339 |      1,631 |
+| docs (Files)                                                                                                      |          6 |        800 |          0 |        211 |      1,011 |
+| docs\archive                                                                                                      |          4 |        492 |          0 |        128 |        620 |
+| scripts                                                                                                           |          4 |        110 |         11 |         26 |        147 |
+| tests                                                                                                             |         19 |      1,974 |        375 |        587 |      2,936 |
+| tests (Files)                                                                                                     |         14 |      1,660 |        277 |        495 |      2,432 |
+| tests\contract                                                                                                    |          3 |        244 |         75 |         68 |        387 |
+| tests\load                                                                                                        |          2 |         70 |         23 |         24 |        117 |
++-------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
+| filename                                                                                                          | language         | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-commit\SKILL.md                           | Skill            |         50 |          0 |         15 |         65 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-compress\README.md                        | Markdown         |        116 |          0 |         48 |        164 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-compress\SECURITY.md                      | Markdown         |         18 |          0 |         14 |         32 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-compress\SKILL.md                         | Skill            |         85 |          0 |         27 |        112 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-compress\scripts\__init__.py              | Python           |          2 |          5 |          3 |         10 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-compress\scripts\__main__.py              | Python           |          2 |          0 |          2 |          4 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-compress\scripts\benchmark.py             | Python           |         56 |          4 |         19 |         79 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-compress\scripts\cli.py                   | Python           |         43 |         10 |         21 |         74 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-compress\scripts\compress.py              | Python           |         99 |        102 |         27 |        228 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-compress\scripts\detect.py                | Python           |         78 |         18 |         26 |        122 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-compress\scripts\validate.py              | Python           |        117 |         16 |         57 |        190 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-help\SKILL.md                             | Skill            |         42 |          0 |         18 |         60 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman-review\SKILL.md                           | Skill            |         38 |          0 |         17 |         55 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\caveman\SKILL.md                                  | Skill            |         50 |          0 |         17 |         67 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\compress\SKILL.md                                 | Skill            |         85 |          0 |         27 |        112 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\compress\scripts\__init__.py                      | Python           |          2 |          5 |          3 |         10 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\compress\scripts\__main__.py                      | Python           |          2 |          0 |          2 |          4 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\compress\scripts\benchmark.py                     | Python           |         56 |          4 |         19 |         79 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\compress\scripts\cli.py                           | Python           |         43 |         10 |         21 |         74 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\compress\scripts\compress.py                      | Python           |         99 |        102 |         27 |        228 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\compress\scripts\detect.py                        | Python           |         78 |         18 |         26 |        122 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\compress\scripts\validate.py                      | Python           |        117 |         16 |         57 |        190 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\create-tasks\.skillfish.json                      | JSON             |         10 |          0 |          0 |         10 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\create-tasks\SKILL.md                             | Skill            |        692 |          0 |        255 |        947 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\create-tasks\references\decomposition-patterns.md | Markdown         |        246 |          0 |         75 |        321 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\create-tasks\references\dependency-inference.md   | Markdown         |        197 |          0 |         55 |        252 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.agents\skills\create-tasks\references\testing-requirements.md   | Markdown         |        297 |          0 |        100 |        397 |
+| c:\Users\lates\Desktop\microservice-scraper-core\.github\instructions\copilot-instructions.md.instructions.md     | Markdown         |         11 |          0 |          4 |         15 |
+| c:\Users\lates\Desktop\microservice-scraper-core\AGENTS.md                                                        | Markdown         |          4 |          0 |          0 |          4 |
+| c:\Users\lates\Desktop\microservice-scraper-core\Dockerfile                                                       | Docker           |         58 |          6 |         15 |         79 |
+| c:\Users\lates\Desktop\microservice-scraper-core\README.md                                                        | Markdown         |         86 |          0 |         25 |        111 |
+| c:\Users\lates\Desktop\microservice-scraper-core\alembic.ini                                                      | Ini              |        123 |          0 |         27 |        150 |
+| c:\Users\lates\Desktop\microservice-scraper-core\alembic\env.py                                                   | Python           |         42 |         24 |         24 |         90 |
+| c:\Users\lates\Desktop\microservice-scraper-core\alembic\versions\6302e90916f4_initial_schema.py                  | Python           |         59 |         10 |          9 |         78 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\__init__.py                                                  | Python           |          1 |          3 |          2 |          6 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\constants.py                                                 | Python           |        109 |         63 |         45 |        217 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\crawl_runner.py                                              | Python           |        353 |         64 |         72 |        489 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\db.py                                                        | Python           |         20 |          3 |          9 |         32 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\dependencies.py                                              | Python           |         14 |          5 |         10 |         29 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\interfaces.py                                                | Python           |         96 |          7 |         29 |        132 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\main.py                                                      | Python           |        122 |         15 |         23 |        160 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\middleware\__init__.py                                       | Python           |          1 |          3 |          2 |          6 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\middleware\auth_headers.py                                   | Python           |        123 |         10 |         22 |        155 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\middleware\rate_limit.py                                     | Python           |         27 |         11 |         14 |         52 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\models\__init__.py                                           | Python           |          1 |          3 |          2 |          6 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\models\common.py                                             | Python           |         10 |          3 |          7 |         20 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\models\crawl.py                                              | Python           |        107 |          7 |         27 |        141 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\models\db.py                                                 | Python           |         55 |          4 |         22 |         81 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\models\document.py                                           | Python           |         26 |          3 |          7 |         36 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\models\enums.py                                              | Python           |         41 |          3 |          9 |         53 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\models\requests.py                                           | Python           |         22 |          3 |         11 |         36 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\models\responses.py                                          | Python           |         46 |          3 |         22 |         71 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\routers\__init__.py                                          | Python           |          1 |          3 |          2 |          6 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\routers\admin.py                                             | Python           |         61 |         16 |         18 |         95 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\routers\classify.py                                          | Python           |         27 |          4 |          8 |         39 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\routers\crawl.py                                             | Python           |         58 |          5 |         11 |         74 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\routers\docs.py                                              | Python           |        246 |         13 |          7 |        266 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\routers\extract.py                                           | Python           |         36 |          4 |         10 |         50 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\routers\health.py                                            | Python           |         79 |         10 |         18 |        107 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\routers\jobs.py                                              | Python           |        151 |         10 |         36 |        197 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\routers\openapi_spec.py                                      | Python           |          8 |          4 |          7 |         19 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\routers\scrape.py                                            | Python           |         75 |          5 |         12 |         92 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\__init__.py                                         | Python           |          1 |          3 |          2 |          6 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\browser.py                                          | Python           |        103 |         40 |         28 |        171 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\classifier.py                                       | Python           |        100 |          3 |         20 |        123 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\extractor.py                                        | Python           |        251 |         69 |         75 |        395 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\fetcher.py                                          | Python           |        270 |         50 |         65 |        385 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\field_extractor.py                                  | Python           |         45 |         11 |         16 |         72 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\frontier.py                                         | Python           |        302 |        115 |         86 |        503 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\job_store.py                                        | Python           |        368 |         38 |         51 |        457 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\mime_utils.py                                       | Python           |         22 |          4 |          8 |         34 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\openapi_loader.py                                   | Python           |         19 |          4 |          8 |         31 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\scrape_service.py                                   | Python           |        108 |          7 |         21 |        136 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\state_machine.py                                    | Python           |         66 |          8 |         12 |         86 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\services\webhooks.py                                         | Python           |        211 |         26 |         42 |        279 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\settings.py                                                  | Python           |         57 |          9 |         18 |         84 |
+| c:\Users\lates\Desktop\microservice-scraper-core\app\worker.py                                                    | Python           |         12 |          3 |          5 |         20 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docker-compose.yml                                               | YAML             |        121 |          0 |          7 |        128 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docs\api-examples.md                                             | Markdown         |        289 |          0 |         50 |        339 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docs\architecture.md                                             | Markdown         |        126 |          0 |         29 |        155 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docs\archive\API_DOCUMENTATION.md                                | Markdown         |        158 |          0 |         44 |        202 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docs\archive\IMPLEMENTATION_CHECKLIST.md                         | Markdown         |        181 |          0 |         31 |        212 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docs\archive\SECURITY.md                                         | Markdown         |         61 |          0 |         30 |         91 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docs\archive\context.md                                          | Markdown         |         92 |          0 |         23 |        115 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docs\configuration.md                                            | Markdown         |         45 |          0 |         14 |         59 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docs\contributing.md                                             | Markdown         |        144 |          0 |         38 |        182 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docs\ops-runbook.md                                              | Markdown         |        122 |          0 |         50 |        172 |
+| c:\Users\lates\Desktop\microservice-scraper-core\docs\security.md                                                 | Markdown         |         74 |          0 |         30 |        104 |
+| c:\Users\lates\Desktop\microservice-scraper-core\mypy.ini                                                         | Ini              |         38 |          0 |         14 |         52 |
+| c:\Users\lates\Desktop\microservice-scraper-core\openapi.yaml                                                     | YAML             |      1,083 |          8 |         53 |      1,144 |
+| c:\Users\lates\Desktop\microservice-scraper-core\pytest.ini                                                       | Ini              |          4 |          0 |          1 |          5 |
+| c:\Users\lates\Desktop\microservice-scraper-core\replit.md                                                        | Markdown         |         54 |          0 |         17 |         71 |
+| c:\Users\lates\Desktop\microservice-scraper-core\requirements.txt                                                 | pip requirements |         28 |         12 |          2 |         42 |
+| c:\Users\lates\Desktop\microservice-scraper-core\ruff.toml                                                        | TOML             |         47 |          2 |          6 |         55 |
+| c:\Users\lates\Desktop\microservice-scraper-core\scraper-api-spec-original.yaml                                   | YAML             |        822 |          8 |         41 |        871 |
+| c:\Users\lates\Desktop\microservice-scraper-core\scraper-api-spec.md                                              | Markdown         |        938 |          0 |        205 |      1,143 |
+| c:\Users\lates\Desktop\microservice-scraper-core\scraper-api-spec.yaml                                            | YAML             |      1,083 |          8 |         53 |      1,144 |
+| c:\Users\lates\Desktop\microservice-scraper-core\scripts\commit-docs.py                                           | Python           |         45 |          4 |          7 |         56 |
+| c:\Users\lates\Desktop\microservice-scraper-core\scripts\commit-docs.sh                                           | Shell Script     |         35 |          4 |         10 |         49 |
+| c:\Users\lates\Desktop\microservice-scraper-core\scripts\quick-validate.py                                        | Python           |         10 |          0 |          2 |         12 |
+| c:\Users\lates\Desktop\microservice-scraper-core\scripts\validate-spec.py                                         | Python           |         20 |          3 |          7 |         30 |
+| c:\Users\lates\Desktop\microservice-scraper-core\skills-lock.json                                                 | JSON             |         35 |          0 |          1 |         36 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\conftest.py                                                | Python           |         26 |         11 |          9 |         46 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\contract\test_domain.py                                    | Python           |         87 |         13 |         19 |        119 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\contract\test_openapi_consistency.py                       | Python           |         12 |          5 |          6 |         23 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\contract\test_schemathesis.py                              | Python           |        145 |         57 |         43 |        245 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\load\__init__.py                                           | Python           |          0 |          0 |          1 |          1 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\load\locustfile.py                                         | Python           |         70 |         23 |         23 |        116 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_browser_frontier.py                                   | Python           |        338 |         38 |         49 |        425 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_classifier.py                                         | Python           |         37 |          1 |          3 |         41 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_concurrency.py                                        | Python           |         65 |         13 |         20 |         98 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_data_integrity.py                                     | Python           |        145 |         28 |         42 |        215 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_docs.py                                               | Python           |         93 |         14 |         36 |        143 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_edge_cases.py                                         | Python           |        130 |         34 |         45 |        209 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_fetcher_extractor.py                                  | Python           |        232 |         44 |         74 |        350 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_health_smoke.py                                       | Python           |         15 |          5 |          9 |         29 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_incremental.py                                        | Python           |         53 |          7 |         21 |         81 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_jobs.py                                               | Python           |        128 |         45 |         59 |        232 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_scrape.py                                             | Python           |         87 |          4 |         15 |        106 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_security.py                                           | Python           |        177 |         29 |         60 |        266 |
+| c:\Users\lates\Desktop\microservice-scraper-core\tests\test_webhooks.py                                           | Python           |        134 |          4 |         53 |        191 |
+| Total                                                                                                             |                  |     14,583 |      1,451 |      3,355 |     19,389 |
++-------------------------------------------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+

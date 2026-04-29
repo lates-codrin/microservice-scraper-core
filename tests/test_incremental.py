@@ -59,7 +59,7 @@ def test_pagination_empty_documents(client):
 
 
 def test_tenant_isolation(client):
-    """Tenant B cannot read tenant A's job â†’ 403."""
+    """Tenant B cannot read tenant A's job  403."""
     job_data = _create_crawl(client)
     job_id = job_data["job_id"]
 

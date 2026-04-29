@@ -42,7 +42,7 @@ def create_app() -> FastAPI:
 
     application.state.started_monotonic = time.monotonic()
 
-    # Redis connection â€” fall back to fakeredis when unavailable
+    # Redis connection ” fall back to fakeredis when unavailable
     try:
         import redis as redis_lib
 
@@ -63,7 +63,7 @@ def create_app() -> FastAPI:
 
         application.state.redis = fakeredis.FakeRedis(decode_responses=True)
 
-    # Middleware stack (order matters â€” outermost first)
+    # Middleware stack (order matters ” outermost first)
     application.add_middleware(AuthHeadersMiddleware, api_key=settings.api_key)
     application.add_middleware(RateLimitMiddleware)
     application.add_middleware(
@@ -81,7 +81,7 @@ def create_app() -> FastAPI:
     async def validation_exception_handler(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
-        """Pydantic validation errors â†’ 422 with standard error envelope."""
+        """Pydantic validation errors  422 with standard error envelope."""
         request_id = getattr(
             request.state,
             "request_id",
@@ -115,7 +115,7 @@ def create_app() -> FastAPI:
     async def http_exception_handler(
         request: Request, exc: StarletteHTTPException
     ) -> JSONResponse:
-        """HTTP exceptions â†’ standard error envelope with code mapping."""
+        """HTTP exceptions  standard error envelope with code mapping."""
         request_id = getattr(
             request.state,
             "request_id",

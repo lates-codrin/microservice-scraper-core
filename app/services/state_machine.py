@@ -1,12 +1,12 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
-"""Job lifecycle state machine â€” enforces valid status transitions."""
+"""Job lifecycle state machine ” enforces valid status transitions."""
 
 from __future__ import annotations
 
 from app.models.enums import CrawlStatus
 
-# Mapping: current_status â†’ set of valid next statuses.
+# Mapping: current_status  set of valid next statuses.
 _VALID_TRANSITIONS: dict[CrawlStatus, frozenset[CrawlStatus]] = {
     CrawlStatus.queued: frozenset({
         CrawlStatus.fetching_sitemap,
@@ -41,7 +41,7 @@ _VALID_TRANSITIONS: dict[CrawlStatus, frozenset[CrawlStatus]] = {
         CrawlStatus.cancelled,
         CrawlStatus.partial,
     }),
-    # Terminal states â€” no further transitions.
+    # Terminal states ” no further transitions.
     CrawlStatus.done: frozenset(),
     CrawlStatus.failed: frozenset(),
     CrawlStatus.cancelled: frozenset(),
@@ -60,7 +60,7 @@ class InvalidTransitionError(Exception):
     ) -> None:
         super().__init__(
             f"Invalid transition for job '{job_id}': "
-            f"'{current.value}' â†’ '{requested.value}'"
+            f"'{current.value}'  '{requested.value}'"
         )
         self.job_id = job_id
         self.current = current
@@ -72,7 +72,7 @@ def validate_transition(
     current: CrawlStatus,
     requested: CrawlStatus,
 ) -> None:
-    """Raise InvalidTransitionError if *current â†’ requested* is invalid."""
+    """Raise InvalidTransitionError if *current  requested* is invalid."""
     valid_next = _VALID_TRANSITIONS.get(current, frozenset())
     if requested not in valid_next:
         raise InvalidTransitionError(job_id, current, requested)

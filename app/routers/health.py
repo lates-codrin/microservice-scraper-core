@@ -1,6 +1,6 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
-"""GET /v1/health â€” service health check with real dependency probing."""
+"""GET /v1/health ” service health check with real dependency probing."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ async def _check_redis(request: Request) -> str:
 async def _check_postgres(store: JobStore) -> str:
     """Execute a lightweight query to verify DB connectivity."""
     try:
-        # queue_depth runs a SELECT COUNT â€” good enough as a liveness probe
+        # queue_depth runs a SELECT COUNT ” good enough as a liveness probe
         await store.queue_depth()
         return "ok"
     except Exception as exc:
@@ -88,7 +88,7 @@ async def healthcheck(
             "postgres": postgres_status,
             "storage": storage_status,
             "proxy_pool": "ok",       # no external proxy pool in this implementation
-            "browser_cluster": "ok",  # Playwright pool â€” lazy-init, always "ok" at startup
+            "browser_cluster": "ok",  # Playwright pool ” lazy-init, always "ok" at startup
             "classifier": "ok",
         },
         queue_depth=await store.queue_depth(),

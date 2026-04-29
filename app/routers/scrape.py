@@ -1,6 +1,6 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
-"""POST /v1/scrape â€” single-URL scrape endpoint."""
+"""POST /v1/scrape ” single-URL scrape endpoint."""
 
 from __future__ import annotations
 

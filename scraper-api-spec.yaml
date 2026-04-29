@@ -18,7 +18,7 @@ info:
     name: Lex-Advisor Platform Team
     email: costin@citydock.ro
   license:
-    name: Apache-2.0
+    name: Apache-2.0 WITH Commons-Clause-1.0
   x-scalar-theme: purple
 
 servers:

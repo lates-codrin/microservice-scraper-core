@@ -1,6 +1,6 @@
 ﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
-"""GET /v1/openapi.json â€” serve the canonical OpenAPI specification."""
+"""GET /v1/openapi.json ” serve the canonical OpenAPI specification."""
 
 from __future__ import annotations
 

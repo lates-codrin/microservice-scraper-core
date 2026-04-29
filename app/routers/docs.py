@@ -71,7 +71,7 @@ _UUID_INJECTOR_JS = """
 </style>
 <script>
 (function () {
-  // Scalar stamps the <tr id="Idempotency-Key"> etc. â€” use that, never text-scan.
+  // Scalar stamps the <tr id="Idempotency-Key"> etc. ” use that, never text-scan.
   const UUID_HEADERS = ['Idempotency-Key', 'X-Request-ID', 'X-Request-Id'];
 
   const DICE_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -91,9 +91,9 @@ _UUID_INJECTOR_JS = """
   }
 
   /**
-   * Scalar uses CodeMirror 6 â€” the value field is a contenteditable div,
+   * Scalar uses CodeMirror 6 ” the value field is a contenteditable div,
    * NOT an <input>. The only reliable way to update it (so CM6 sees the
-   * change and persists it) is to focus â†’ select-all â†’ execCommand insertText.
+   * change and persists it) is to focus  select-all  execCommand insertText.
    */
   function fillCM6(valueCell, uuid) {
     const cm = valueCell.querySelector('.cm-content[contenteditable="true"]');
@@ -105,7 +105,7 @@ _UUID_INJECTOR_JS = """
 
   function inject() {
     for (const name of UUID_HEADERS) {
-      // Scalar sets the header name as the <tr> id â€” one exact match, no duplicates.
+      // Scalar sets the header name as the <tr> id ” one exact match, no duplicates.
       const row = document.querySelector(`tr[id="${name}"]`);
       if (!row || row.dataset.uuidDone) continue;
 
@@ -126,7 +126,7 @@ _UUID_INJECTOR_JS = """
       const btn = document.createElement('button');
       btn.className   = 'uuid-gen-btn';
       btn.type        = 'button';
-      btn.setAttribute('data-tip', `Generate UUID â†’ ${name}`);
+      btn.setAttribute('data-tip', `Generate UUID  ${name}`);
       btn.innerHTML   = DICE_SVG;
 
       btn.addEventListener('click', e => {
@@ -142,7 +142,7 @@ _UUID_INJECTOR_JS = """
     }
   }
 
-  // Scalar is a Vue SPA â€” the request panel is torn down and rebuilt on every
+  // Scalar is a Vue SPA ” the request panel is torn down and rebuilt on every
   // route change, so we need the observer to re-inject on each render.
   const observer = new MutationObserver(() => {
     clearTimeout(observer._tid);

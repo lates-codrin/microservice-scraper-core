@@ -1,5 +1,5 @@
 # Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 HTTP fetching service — async httpx client with:
 - Redirect following (max 10 hops), SSRF-checked at every hop

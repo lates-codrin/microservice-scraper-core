@@ -1,5 +1,5 @@
 # Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Load and cache the OpenAPI specification from the YAML source file."""
 
 from __future__ import annotations

@@ -148,7 +148,7 @@ class JobStore:
             )
 
         result = await self.get(job_id)
-        assert result is not None  # noqa: S101 â€” just-created job must exist
+        assert result is not None  # noqa: S101 ” just-created job must exist
         return result
 
     async def create_scrape_job(self, tenant_id: str) -> str:
@@ -236,7 +236,7 @@ class JobStore:
                 validate_transition(job_id, current_job.status, status)
             except InvalidTransitionError:
                 logger.warning(
-                    "Rejected transition %s â†’ %s for job %s",
+                    "Rejected transition %s  %s for job %s",
                     current_job.status.value,
                     status.value,
                     job_id,

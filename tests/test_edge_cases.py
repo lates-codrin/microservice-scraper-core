@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 Edge-case tests:
-  - empty seed_urls â†’ 422
-  - max_pages=0 â†’ 422 (ge=1)
-  - max_depth=0 â†’ 422 (ge=1)
-  - limit=0 on pagination â†’ 422 (ge=1)
-  - cursor issued for a different tenant â†’ 403 (tenant isolation)
-  - job that transitions queued â†’ failed (worker crash simulation)
-  - callback_url that returns a redirect â†’ SSRF check on redirect target
+  - empty seed_urls  422
+  - max_pages=0  422 (ge=1)
+  - max_depth=0  422 (ge=1)
+  - limit=0 on pagination  422 (ge=1)
+  - cursor issued for a different tenant  403 (tenant isolation)
+  - job that transitions queued  failed (worker crash simulation)
+  - callback_url that returns a redirect  SSRF check on redirect target
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def client():
 
 
 def test_empty_seed_urls_returns_422(client):
-    """seed_urls must have min_length=1; empty list â†’ 422."""
+    """seed_urls must have min_length=1; empty list  422."""
     payload = {
         "config": {
             "seed_urls": [],
@@ -56,7 +56,7 @@ def test_empty_seed_urls_returns_422(client):
 
 
 def test_max_pages_zero_returns_422(client):
-    """max_pages has ge=1; 0 â†’ 422."""
+    """max_pages has ge=1; 0  422."""
     payload = {
         "config": {
             "seed_urls": ["https://primaria-exemplu.ro"],
@@ -69,7 +69,7 @@ def test_max_pages_zero_returns_422(client):
 
 
 def test_max_depth_zero_returns_422(client):
-    """max_depth has ge=1; 0 â†’ 422."""
+    """max_depth has ge=1; 0  422."""
     payload = {
         "config": {
             "seed_urls": ["https://primaria-exemplu.ro"],
@@ -82,7 +82,7 @@ def test_max_depth_zero_returns_422(client):
 
 
 def test_pagination_limit_zero_returns_422(client):
-    """limit query param has ge=1; 0 â†’ 422."""
+    """limit query param has ge=1; 0  422."""
     resp = client.post(
         "/v1/crawl",
         json={"config": {"seed_urls": ["https://primaria-exemplu.ro"], "allowed_domains": ["primaria-exemplu.ro"]}},
@@ -139,7 +139,7 @@ def test_cross_tenant_cursor_returns_403(client):
 
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# Job crash simulation: queued â†’ failed
+# Job crash simulation: queued  failed
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
@@ -162,7 +162,7 @@ def test_job_crash_queued_to_failed(client):
     resp = client.get(f"/v1/jobs/{job_id}", headers=_h())
     assert resp.json()["status"] == "queued"
 
-    # Force-fail via direct DB update (bypassing state machine â€” simulates crash)
+    # Force-fail via direct DB update (bypassing state machine ” simulates crash)
     async def _force_fail():
         async with db_module.async_session_maker() as session:
             await session.execute(
