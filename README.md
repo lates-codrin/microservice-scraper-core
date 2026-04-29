@@ -1,5 +1,27 @@
 # Lex-Advisor Scraper Service
 
+<div align="center">
+  <h3>🔍 Documentation Preview</h3>
+  <table border="0">
+    <tr>
+      <td>
+        <p align="center"><b>API Swagger Docs</b></p>
+        <img src="https://github.com/user-attachments/assets/5d958c1e-5b6c-42e6-acf0-8dd8f4fdf0c7" width="400px" />
+      </td>
+      <td>
+        <p align="center"><b>Crawl Monitoring</b></p>
+        <img src="https://github.com/user-attachments/assets/4bf0aa65-9d98-46c7-940b-afa624f6fcf9" width="400px" />
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" align="center">
+        <p align="center"><b>System Architecture</b></p>
+        <img src="https://github.com/user-attachments/assets/058508b0-4149-4464-bb50-251daa5485cd" width="600px" />
+      </td>
+    </tr>
+  </table>
+</div>
+
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688.svg)](https://fastapi.tiangolo.com)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
