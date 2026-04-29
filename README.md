@@ -1,10 +1,21 @@
-# Lex-Advisor Scraper Service
+# 🏛️ Lex-Advisor Scraper Service
 
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688.svg)](https://fastapi.tiangolo.com)
-[![License: Apache-2.0 WITH Commons-Clause-1.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+> **High-performance, hardened scraper microservice for Romanian municipal documents.**
+> Designed for multi-tenant production deployment with SSRF protection and async architecture.
 
-High-performance, hardened scraper microservice for Romanian municipal documents. Built with async Python, designed for multi-tenant production deployment.
+<p align="center">
+  <img width="1920" height="953" alt="ezgif com-animated-gif-maker" src="https://github.com/user-attachments/assets/ffa5aa75-0bb1-410a-9313-20baa8010d3e" />
+
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.12-blue?style=for-the-badge&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/License-Apache--2.0%20WITH%20Commons--Clause-orange?style=for-the-badge" />
+</p>
+
+
 
 ## Features
 
@@ -107,4 +118,4 @@ mypy --strict app/
 
 ## License
 
-[Apache-2.0 WITH Commons-Clause-1.0](LICENSE) — Copyright 2026 Lates Codrin-Gabriel
+[Apache-2.0](LICENSE) — Copyright 2026 Lates Codrin-Gabriel
