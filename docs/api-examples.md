@@ -12,6 +12,14 @@ X-Request-ID: <UUID v4>
 X-Tenant-ID: <tenant-slug>
 ```
 
+Response headers you may see (provider adds these):
+
+```
+X-Vendor-Trace-ID: <trace-id or echoed X-Request-ID>
+X-Vendor-Cache-Status: HIT|MISS
+Server-Timing: total_duration;dur=123.4
+```
+
 ---
 
 ## POST /v1/scrape — Single URL Scrape
@@ -305,6 +313,61 @@ curl http://localhost:8080/v1/health
   "queue_depth": 3,
   "active_workers": 4
 }
+```
+
+---
+
+## GET /v1/metrics — Prometheus exposition
+
+The service exposes Prometheus-format metrics at `/v1/metrics`. This endpoint is unauthenticated and intended for scraping by Prometheus (or for quick local inspection). Example metrics include `http_requests_total`, `http_request_duration_seconds`, `active_jobs`, and vendor cost/token counters.
+
+### Curl (quick check)
+
+```bash
+curl -s http://localhost:8080/v1/metrics \
+  -H "Authorization: Bearer dev-api-key-change-me" \
+  -H "X-Request-ID: $(uuidgen)" \
+  -H "X-Tenant-ID: ph-balta-doamnei" | head -n 40
+```
+
+### Python (runnable example)
+
+Save the snippet below to `scripts/fetch_metrics.py` and run `python scripts/fetch_metrics.py`.
+
+```python
+import requests
+
+METRICS_URL = "http://localhost:8080/v1/metrics"
+
+headers = {
+  "Authorization": "Bearer dev-api-key-change-me",
+  "X-Request-ID": "00000000-0000-4000-8000-000000000000",
+  "X-Tenant-ID": "ph-balta-doamnei",
+}
+
+resp = requests.get(METRICS_URL, headers=headers, timeout=5)
+resp.raise_for_status()
+
+text = resp.text
+print("--- Metrics (first 2000 chars) ---")
+print(text[:2000])
+
+# Simple parse: show lines for http_requests_total and active_jobs
+for line in text.splitlines():
+    if line.startswith('http_requests_total') or line.startswith('active_jobs'):
+        print(line)
+```
+
+### Example output (truncated)
+
+```
+# HELP http_requests_total Total HTTP requests
+# TYPE http_requests_total counter
+http_requests_total{method="GET",endpoint="/v1/health",status="200"} 42
+http_requests_total{method="POST",endpoint="/v1/scrape",status="200"} 12
+# HELP active_jobs Number of active crawl jobs
+# TYPE active_jobs gauge
+active_jobs 3
 ```
 
 ---

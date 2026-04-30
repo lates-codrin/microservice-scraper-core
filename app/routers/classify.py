@@ -19,7 +19,7 @@ router = APIRouter(prefix="/v1", tags=["classify"])
     status_code=status.HTTP_200_OK,
 )
 async def classify(payload: ClassifyRequest) -> ClassifyResponse:
-    """Classify a document's type based on content and optional URL/title hints."""
+    """For reclassifying existing documents without re-fetching."""
     url_hint = str(payload.url_hint) if payload.url_hint else None
     doc_type, confidence, alternatives = classify_document(
         url_hint, payload.content

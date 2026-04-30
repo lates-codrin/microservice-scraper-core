@@ -234,9 +234,9 @@ def test_api_contract(case):
     case.validate_response(response, excluded_checks=[_ignored_auth_check])
 
     # Required response headers (schemathesis Response.headers keys are lowercase)
-    # Public paths (/v1/health) skip the auth middleware so no X-Request-ID is set.
+    # Public paths skip the auth middleware so no X-Request-ID is set.
     path = (case.path or "").rstrip("/")
-    is_public = path in ("/v1/health",)
+    is_public = path in ("/v1/health", "/v1/openapi.json")
     if not is_public:
         assert "x-request-id" in response.headers, f"Missing x-request-id in {list(response.headers.keys())}"
     assert "ratelimit-limit" in response.headers

@@ -63,6 +63,7 @@ curl -X POST http://localhost:8080/v1/scrape \
 | [Security](docs/security.md) | Threat model, SSRF defence, injection hardening, CVE audit |
 | [Operations](docs/ops-runbook.md) | Service management, maintenance procedures, failure diagnosis |
 | [Contributing](docs/contributing.md) | Developer setup, code standards, PR checklist |
+| [Compliance Audit](docs/COMPLIANCE_AUDIT_2026-04-29.md) | Latest auditor report and follow-ups |
 
 ## Infrastructure
 
@@ -99,6 +100,9 @@ mypy --strict app/
 | `POST` | `/v1/classify` | Document type classification |
 | `POST` | `/v1/extract` | Structured field extraction |
 | `GET` | `/v1/health` | Service health check |
+| Response Headers | `X-Vendor-Trace-ID`, `X-Vendor-Cache-Status`, `Server-Timing` | Emitted on successful responses |
+| `GET` | `/v1/metrics` | Prometheus metrics (exposition format) |
+| Required Headers | `Authorization`, `X-Request-ID`, `X-Tenant-ID` | Metrics endpoint requires these headers |
 
 <details>
 <summary><strong>Spec Compliance Checklist</strong></summary>

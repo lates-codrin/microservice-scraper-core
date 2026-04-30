@@ -59,11 +59,12 @@ def create_app() -> FastAPI:
     configure_structured_logging()
 
     application = FastAPI(
-        title="Lex-Advisor Scraper Service",
+        title="Lex-Advisor Scraper Service API",
         version=settings.service_version,
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
+        openapi_version="3.0.3",
     )
 
     application.state.started_monotonic = time.monotonic()
