@@ -151,7 +151,11 @@ class JobStore:
         assert result is not None  # noqa: S101 ” just-created job must exist
         return result
 
-    async def create_scrape_job(self, tenant_id: str) -> str:
+    async def create_scrape_job(
+        self,
+        tenant_id: str,
+        request_payload: dict[str, Any] | None = None,
+    ) -> str:
         """Create a lightweight single-URL scrape job."""
         job_id = f"{JOB_ID_PREFIX_SCRAPE}{uuid4().hex[:12]}"
         now = datetime.now(UTC)
@@ -171,7 +175,7 @@ class JobStore:
             stats=CrawlStats(
                 by_doc_type={"other": 0}, http_errors={}
             ).model_dump(),
-            config=None,
+            config=request_payload,
             submitted_at=now,
             estimated_completion_at=now
             + timedelta(seconds=ESTIMATED_SCRAPE_COMPLETION_SECONDS),
@@ -198,13 +202,17 @@ class JobStore:
         if not db_job:
             return None
 
+        config = None
+        if db_job.config and not db_job.job_id.startswith("sj_"):
+            config = CrawlConfig(**db_job.config)
+
         return CrawlJob(
             job_id=db_job.job_id,
             tenant_id=db_job.tenant_id,
             status=CrawlStatus(db_job.status),
             progress=CrawlProgress(**db_job.progress) if db_job.progress else None,
             stats=CrawlStats(**db_job.stats) if db_job.stats else None,
-            config=CrawlConfig(**db_job.config) if db_job.config else None,
+            config=config,
             callback_url=db_job.callback_url,
             submitted_at=db_job.submitted_at,
             started_at=db_job.started_at,

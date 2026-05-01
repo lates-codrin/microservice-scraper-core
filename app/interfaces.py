@@ -29,7 +29,11 @@ class JobStoreProtocol(ABC):
         ...
 
     @abstractmethod
-    async def create_scrape_job(self, tenant_id: str) -> str:
+    async def create_scrape_job(
+        self,
+        tenant_id: str,
+        request_payload: dict[str, Any] | None = None,
+    ) -> str:
         ...
 
     @abstractmethod

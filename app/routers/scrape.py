@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
 from app.dependencies import get_job_store
@@ -19,28 +19,6 @@ from app.services.scrape_service import execute_sync_scrape
 router = APIRouter(prefix="/v1", tags=["scrape"])
 
 
-async def _run_async_scrape(
-    job_id: str,
-    payload: ScrapeRequest,
-    tenant_id: str,
-    request_id: str,
-    store: JobStore,
-    redis_client: object,
-) -> None:
-    """Execute a scrape job in the background, updating DB on completion."""
-    from app.models.enums import CrawlStatus
-    try:
-        await execute_sync_scrape(
-            payload=payload,
-            tenant_id=tenant_id,
-            request_id=request_id,
-            store=store,
-            redis_client=redis_client,
-        )
-    except Exception:
-        pass  # execute_sync_scrape already marks job failed on exception
-
-
 @router.post(
     "/scrape",
     response_model=ScrapeResponse,
@@ -50,21 +28,14 @@ async def _run_async_scrape(
 async def scrape_url(
     payload: ScrapeRequest,
     request: Request,
-    background_tasks: BackgroundTasks,
     store: JobStore = Depends(get_job_store),
     idempotency_key: UUID = Header(..., alias="Idempotency-Key"),
 ) -> ScrapeResponse | JSONResponse:
     """Scrape a single URL synchronously or queue it for async processing."""
     if payload.mode == "async":
-        job_id = await store.create_scrape_job(request.state.tenant_id)
-        background_tasks.add_task(
-            _run_async_scrape,
-            job_id=job_id,
-            payload=payload,
-            tenant_id=request.state.tenant_id,
-            request_id=request.state.request_id,
-            store=store,
-            redis_client=request.app.state.redis,
+        job_id = await store.create_scrape_job(
+            request.state.tenant_id,
+            request_payload=payload.model_dump(mode="json"),
         )
         queued = AsyncJobResponse(job_id=job_id, status="queued")
         return JSONResponse(

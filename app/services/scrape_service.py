@@ -30,12 +30,17 @@ async def execute_sync_scrape(
     request_id: str,
     store: JobStore,
     redis_client: object,
+    job_id: str | None = None,
 ) -> tuple[ScrapedDocument, int]:
     """Run a synchronous scrape and return (document, latency_ms).
 
     Raises FetchError on fetch failures.
     """
-    job_id = await store.create_scrape_job(tenant_id)
+    if job_id is None:
+        job_id = await store.create_scrape_job(
+            tenant_id,
+            request_payload=payload.model_dump(mode="json"),
+        )
 
     try:
         fetch_result = await fetch(

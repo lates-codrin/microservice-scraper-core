@@ -103,3 +103,29 @@ def test_scrape_sync_fetches_extracts_and_persists(monkeypatch):
         assert store.update.await_count == 1
     finally:
         app.dependency_overrides.clear()
+
+
+def test_scrape_async_reuses_created_job(monkeypatch):
+    store = AsyncMock()
+    store.create_scrape_job.return_value = "sj_123"
+    app.dependency_overrides[get_job_store] = lambda: store
+
+    try:
+        response = client.post(
+            "/v1/scrape",
+            json={
+                "url": "https://example.com/doc",
+                "mode": "async",
+            },
+            headers=_auth_headers(),
+        )
+
+        assert response.status_code == 202
+        assert response.json()["job_id"] == "sj_123"
+        store.create_scrape_job.assert_awaited_once()
+        create_args = store.create_scrape_job.await_args
+        assert create_args.args[0] == "test-tenant"
+        assert create_args.kwargs["request_payload"]["url"] == "https://example.com/doc"
+        assert create_args.kwargs["request_payload"]["mode"] == "async"
+    finally:
+        app.dependency_overrides.clear()

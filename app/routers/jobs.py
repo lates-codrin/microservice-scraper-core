@@ -72,7 +72,7 @@ async def get_job(
     if job is None:
         return _not_found(job_id, request.state.request_id)
 
-    if job.status not in (CrawlStatus.failed, CrawlStatus.cancelled, CrawlStatus.partial):
+    if job.status == CrawlStatus.queued:
         if job.submitted_at is not None:
             age_seconds = (
                 datetime.now(UTC) - job.submitted_at
