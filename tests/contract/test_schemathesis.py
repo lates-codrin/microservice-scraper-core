@@ -13,6 +13,7 @@ a thin requests.Session wrapper that routes to starlette's TestClient.
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 from unittest.mock import AsyncMock
 from urllib.parse import urlparse, urlunparse
 
@@ -135,7 +136,23 @@ class _ASGISession(requests.Session):
 # Load OpenAPI schema from the spec YAML file
 # ─────────────────────────────────────────────────────────────────────────────
 
-schema = schemathesis.openapi.from_path("scraper-api-spec.yaml")
+
+def _load_schema_with_compat_fallback():
+    """Load the canonical spec, fallback to 3.0 when this Schemathesis build lacks 3.1 support."""
+
+    primary_spec = Path("scraper-api-spec.yaml")
+    fallback_spec = Path("scraper-api-spec-original.yaml")
+
+    try:
+        return schemathesis.openapi.from_path(str(primary_spec))
+    except Exception as exc:
+        is_openapi_31_error = "Open API 3.1.0" in str(exc)
+        if not is_openapi_31_error or not fallback_spec.exists():
+            raise
+        return schemathesis.openapi.from_path(str(fallback_spec))
+
+
+schema = _load_schema_with_compat_fallback()
 
 _SESSION = _ASGISession(app)
 _BASE_URL = "http://testserver"

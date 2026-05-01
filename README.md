@@ -1,12 +1,26 @@
 # 🏛️ Lex-Advisor Scraper Service
 
-> **High-performance, hardened scraper microservice for Romanian municipal documents.**
+> **High-performance, hardened scraper microservice for Romanian municipal documents.**  
 > Designed for multi-tenant production deployment with SSRF protection and async architecture.
 
-<p align="center">
-  <img width="1920" height="953" alt="ezgif com-animated-gif-maker" src="https://github.com/user-attachments/assets/ffa5aa75-0bb1-410a-9313-20baa8010d3e" />
+<br/>
 
+<p align="center">
+  <a href="https://lexy.latescodrin.com/">
+    <img src="https://img.shields.io/badge/🚀_Live_Demo-Try_It_Now-111827?style=for-the-badge&logo=vercel&logoColor=white" />
+  </a>
+  <a href="https://registry.scalar.com/@default-team-yvw4q/apis/lex-advisor-scraper-service-api@1.0.0">
+    <img src="https://img.shields.io/badge/📚_API_Docs-Read_Documentation-0f766e?style=for-the-badge&logo=bookstack&logoColor=white" />
+  </a>
 </p>
+
+<br/>
+
+<p align="center">
+  <img width="1920" height="953" alt="demo" src="https://github.com/user-attachments/assets/ffa5aa75-0bb1-410a-9313-20baa8010d3e" />
+</p>
+
+<br/>
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.12-blue?style=for-the-badge&logo=python&logoColor=white" />
@@ -14,16 +28,6 @@
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
   <img src="https://img.shields.io/badge/License-Apache--2.0%20WITH%20Commons--Clause-orange?style=for-the-badge" />
 </p>
-
-<p align="center">
-  <a href="https://registry.scalar.com/@default-team-yvw4q/apis/lex-advisor-scraper-service-api@1.0.0">
-    <img src="https://img.shields.io/badge/Docs-API%20Reference-0f766e?style=for-the-badge&logo=scalar&logoColor=white" alt="Docs" />
-  </a>
-  <a href="https://lexy.latescodrin.com/">
-    <img src="https://img.shields.io/badge/Integration%20Example-Live%20Demo-0f172a?style=for-the-badge&logo=vercel&logoColor=white" alt="Integration Example" />
-  </a>
-</p>
-
 
 
 ## Features

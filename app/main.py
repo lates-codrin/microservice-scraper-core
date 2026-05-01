@@ -99,7 +99,10 @@ def create_app() -> FastAPI:
     application.add_middleware(RateLimitMiddleware)
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],
+        allow_origins=[
+            "http://localhost:3000",
+            "https://lexy.latescodrin.com"  # YES I GET IT I SHOULD USE ENV VARS FOR THIS
+        ], # TODO: make this configurable via env vars hehe later on tho -- codrin
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],

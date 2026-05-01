@@ -55,6 +55,49 @@ paths:
               timeout_ms: 30000
               mode: sync
               redact_pii: false
+      x-codeSamples:
+      - lang: curl
+        label: cURL
+        source: |
+          curl -X POST "http://localhost:8080/v1/scrape" \
+            -H "Authorization: Bearer dev-api-key-change-me" \
+            -H "X-Request-ID: $(uuidgen)" \
+            -H "X-Tenant-ID: ph-balta-doamnei" \
+            -H "Idempotency-Key: $(uuidgen)" \
+            -H "Content-Type: application/json" \
+            -d '{"url":"https://primariabucuresti.ro/hotarari","classify":true,"mode":"sync"}'
+      - lang: python
+        label: Python
+        source: |
+          import requests
+          import uuid
+
+          requests.post(
+              "http://localhost:8080/v1/scrape",
+              headers={
+                  "Authorization": "Bearer dev-api-key-change-me",
+                  "X-Request-ID": str(uuid.uuid4()),
+                  "X-Tenant-ID": "ph-balta-doamnei",
+                  "Idempotency-Key": str(uuid.uuid4()),
+              },
+              json={"url": "https://primariabucuresti.ro/hotarari", "classify": True, "mode": "sync"},
+          )
+      - lang: javascript
+        label: JavaScript
+        source: |
+          import { randomUUID } from "crypto";
+
+          await fetch("http://localhost:8080/v1/scrape", {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer dev-api-key-change-me",
+              "X-Request-ID": randomUUID(),
+              "X-Tenant-ID": "ph-balta-doamnei",
+              "Idempotency-Key": randomUUID(),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ url: "https://primariabucuresti.ro/hotarari", classify: true, mode: "sync" }),
+          });
       responses:
         '200':
           description: Successful Response
@@ -105,6 +148,49 @@ paths:
                 allowed_domains:
                 - example.com
                 max_depth: 3
+      x-codeSamples:
+      - lang: curl
+        label: cURL
+        source: |
+          curl -X POST "http://localhost:8080/v1/crawl" \
+            -H "Authorization: Bearer dev-api-key-change-me" \
+            -H "X-Request-ID: $(uuidgen)" \
+            -H "X-Tenant-ID: ph-balta-doamnei" \
+            -H "Idempotency-Key: $(uuidgen)" \
+            -H "Content-Type: application/json" \
+            -d '{"config":{"seed_urls":["https://primariabucuresti.ro/"],"allowed_domains":["primariabucuresti.ro"],"max_depth":3}}'
+      - lang: python
+        label: Python
+        source: |
+          import requests
+          import uuid
+
+          requests.post(
+              "http://localhost:8080/v1/crawl",
+              headers={
+                  "Authorization": "Bearer dev-api-key-change-me",
+                  "X-Request-ID": str(uuid.uuid4()),
+                  "X-Tenant-ID": "ph-balta-doamnei",
+                  "Idempotency-Key": str(uuid.uuid4()),
+              },
+              json={"config": {"seed_urls": ["https://primariabucuresti.ro/"], "allowed_domains": ["primariabucuresti.ro"], "max_depth": 3}},
+          )
+      - lang: javascript
+        label: JavaScript
+        source: |
+          import { randomUUID } from "crypto";
+
+          await fetch("http://localhost:8080/v1/crawl", {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer dev-api-key-change-me",
+              "X-Request-ID": randomUUID(),
+              "X-Tenant-ID": "ph-balta-doamnei",
+              "Idempotency-Key": randomUUID(),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ config: { seed_urls: ["https://primariabucuresti.ro/"], allowed_domains: ["primariabucuresti.ro"], max_depth: 3 } }),
+          });
       responses:
         '202':
           description: Successful Response
@@ -191,6 +277,7 @@ paths:
           - type: string
           - type: 'null'
           title: Cursor
+        description: Opaque pagination token for fetching next page.
       - name: limit
         in: query
         required: false
@@ -200,6 +287,7 @@ paths:
           minimum: 1
           default: 100
           title: Limit
+        description: Maximum number of documents per page (default 100).
       - name: doc_type
         in: query
         required: false
@@ -208,6 +296,7 @@ paths:
           - $ref: '#/components/schemas/DocType'
           - type: 'null'
           title: Doc Type
+        description: Filter by classification (e.g., hcl, dispozitie_primar).
       - name: min_confidence
         in: query
         required: false
@@ -217,6 +306,7 @@ paths:
           minimum: 0.0
           default: 0.0
           title: Min Confidence
+        description: Return only documents with classification confidence >= this threshold.
       - name: changed_only
         in: query
         required: false
@@ -224,6 +314,7 @@ paths:
           type: boolean
           default: false
           title: Changed Only
+        description: On incremental crawls, only return new or changed documents vs baseline.
       - $ref: '#/components/parameters/XTenantID'
       responses:
         '200':
