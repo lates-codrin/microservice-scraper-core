@@ -15,6 +15,15 @@
   <img src="https://img.shields.io/badge/License-Apache--2.0%20WITH%20Commons--Clause-orange?style=for-the-badge" />
 </p>
 
+<p align="center">
+  <a href="https://registry.scalar.com/@default-team-yvw4q/apis/lex-advisor-scraper-service-api@1.0.0">
+    <img src="https://img.shields.io/badge/Docs-API%20Reference-0f766e?style=for-the-badge&logo=scalar&logoColor=white" alt="Docs" />
+  </a>
+  <a href="https://lexy.latescodrin.com/">
+    <img src="https://img.shields.io/badge/Integration%20Example-Live%20Demo-0f172a?style=for-the-badge&logo=vercel&logoColor=white" alt="Integration Example" />
+  </a>
+</p>
+
 
 
 ## Features

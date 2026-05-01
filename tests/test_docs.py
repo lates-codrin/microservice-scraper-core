@@ -53,7 +53,7 @@ def test_openapi_json_returns_valid_spec(client: TestClient) -> None:
     
     spec = response.json()
     assert isinstance(spec, dict)
-    assert spec.get("openapi") == "3.0.3"
+    assert spec.get("openapi") in ("3.0.3", "3.1.0")
     assert spec.get("info", {}).get("title") == "Lex-Advisor Scraper Service API"
     assert "paths" in spec
     assert "components" in spec

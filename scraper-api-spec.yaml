@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Lex-Advisor Scraper Service API
   version: 1.0.0
@@ -15,6 +15,11 @@ info:
   license:
     name: Apache-2.0 WITH Commons-Clause-1.0
   x-scalar-theme: purple
+  x-scalar-preferences:
+    servers:
+      preferredId: prod
+    tryItOut:
+      showOptionalProperties: true
 paths:
   /v1/scrape:
     post:
@@ -31,6 +36,9 @@ paths:
           type: string
           format: uuid
           title: Idempotency-Key
+      - $ref: '#/components/parameters/XRequestID'
+      - $ref: '#/components/parameters/XTenantID'
+      - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -39,52 +47,14 @@ paths:
               $ref: '#/components/schemas/ScrapeRequest'
             example:
               url: https://example.com
-              output_formats:
-              - markdown
-      x-codeSamples:
-      - lang: curl
-        source: |
-          curl -X POST "$BASE_URL/v1/scrape" \
-            -H "Authorization: Bearer $API_KEY" \
-            -H "X-Tenant-ID: test-tenant" \
-            -H "X-Request-ID: req_123" \
-            -H "Idempotency-Key: idem_123" \
-            -H "Content-Type: application/json" \
-            -d '{"url":"https://example.com","output_formats":["markdown"]}'
-      - lang: python
-        source: |
-          import requests
-
-          resp = requests.post(
-              "https://api.example.com/v1/scrape",
-              headers={
-                  "Authorization": "Bearer <api-key>",
-                  "X-Tenant-ID": "test-tenant",
-                  "X-Request-ID": "req_123",
-                  "Idempotency-Key": "idem_123",
-              },
-              json={"url": "https://example.com", "output_formats": ["markdown"]},
-              timeout=30,
-          )
-          print(resp.status_code, resp.json())
-      - lang: javascript
-        source: |
-          const response = await fetch("https://api.example.com/v1/scrape", {
-            method: "POST",
-            headers: {
-              "Authorization": "Bearer <api-key>",
-              "X-Tenant-ID": "test-tenant",
-              "X-Request-ID": "req_123",
-              "Idempotency-Key": "idem_123",
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              url: "https://example.com",
-              output_formats: ["markdown"]
-            })
-          });
-
-          console.log(response.status, await response.json());
+              render_javascript: always
+              follow_redirects: true
+              include_raw_html: false
+              classify: true
+              extract_structured: false
+              timeout_ms: 30000
+              mode: sync
+              redact_pii: false
       responses:
         '200':
           description: Successful Response
@@ -119,6 +89,9 @@ paths:
           type: string
           format: uuid
           title: Idempotency-Key
+      - $ref: '#/components/parameters/XRequestID'
+      - $ref: '#/components/parameters/XTenantID'
+      - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -131,57 +104,7 @@ paths:
                 - https://example.com
                 allowed_domains:
                 - example.com
-      x-codeSamples:
-      - lang: curl
-        source: |
-          curl -X POST "$BASE_URL/v1/crawl" \
-            -H "Authorization: Bearer $API_KEY" \
-            -H "X-Tenant-ID: test-tenant" \
-            -H "X-Request-ID: req_123" \
-            -H "Idempotency-Key: idem_123" \
-            -H "Content-Type: application/json" \
-            -d '{"config":{"seed_urls":["https://example.com"],"allowed_domains":["example.com"]}}'
-      - lang: python
-        source: |
-          import requests
-
-          resp = requests.post(
-              "https://api.example.com/v1/crawl",
-              headers={
-                  "Authorization": "Bearer <api-key>",
-                  "X-Tenant-ID": "test-tenant",
-                  "X-Request-ID": "req_123",
-                  "Idempotency-Key": "idem_123",
-              },
-              json={
-                  "config": {
-                      "seed_urls": ["https://example.com"],
-                      "allowed_domains": ["example.com"],
-                  }
-              },
-              timeout=30,
-          )
-          print(resp.status_code, resp.json())
-      - lang: javascript
-        source: |
-          const response = await fetch("https://api.example.com/v1/crawl", {
-            method: "POST",
-            headers: {
-              "Authorization": "Bearer <api-key>",
-              "X-Tenant-ID": "test-tenant",
-              "X-Request-ID": "req_123",
-              "Idempotency-Key": "idem_123",
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              config: {
-                seed_urls: ["https://example.com"],
-                allowed_domains: ["example.com"]
-              }
-            })
-          });
-
-          console.log(response.status, await response.json());
+                max_depth: 3
       responses:
         '202':
           description: Successful Response
@@ -209,6 +132,7 @@ paths:
         schema:
           type: string
           title: Job Id
+      - $ref: '#/components/parameters/XTenantID'
       responses:
         '200':
           description: Successful Response
@@ -216,8 +140,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CrawlJob'
-        '404':
-          description: Job not found
         '422':
           description: Validation Error
           content:
@@ -237,11 +159,10 @@ paths:
         schema:
           type: string
           title: Job Id
+      - $ref: '#/components/parameters/XTenantID'
       responses:
         '204':
           description: Successful Response
-        '404':
-          description: Job not found
         '422':
           description: Validation Error
           content:
@@ -265,7 +186,6 @@ paths:
       - name: cursor
         in: query
         required: false
-        description: Opaque pagination token returned by a previous response.
         schema:
           anyOf:
           - type: string
@@ -274,7 +194,6 @@ paths:
       - name: limit
         in: query
         required: false
-        description: Maximum number of documents to return per page.
         schema:
           type: integer
           maximum: 500
@@ -284,7 +203,6 @@ paths:
       - name: doc_type
         in: query
         required: false
-        description: Filter by classification doc type.
         schema:
           anyOf:
           - $ref: '#/components/schemas/DocType'
@@ -293,7 +211,6 @@ paths:
       - name: min_confidence
         in: query
         required: false
-        description: Minimum classification confidence threshold.
         schema:
           type: number
           maximum: 1.0
@@ -307,6 +224,7 @@ paths:
           type: boolean
           default: false
           title: Changed Only
+      - $ref: '#/components/parameters/XTenantID'
       responses:
         '200':
           description: Successful Response
@@ -314,8 +232,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentPageResponse'
-        '404':
-          description: Job not found
         '422':
           description: Validation Error
           content:
@@ -336,6 +252,7 @@ paths:
         schema:
           type: string
           title: Job Id
+      - $ref: '#/components/parameters/XTenantID'
       responses:
         '200':
           description: Successful Response
@@ -343,8 +260,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CancelJobResponse'
-        '404':
-          description: Job not found
         '422':
           description: Validation Error
           content:
@@ -363,6 +278,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ClassifyRequest'
+            example:
+              content: Sample document content
+              content_type: html
         required: true
       responses:
         '200':
@@ -377,6 +295,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      parameters:
+      - $ref: '#/components/parameters/XRequestID'
+      - $ref: '#/components/parameters/XTenantID'
   /v1/extract:
     post:
       tags:
@@ -402,6 +323,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ExtractRequest'
+            example:
+              content: Sample document content
+              doc_type: hcl
         required: true
       responses:
         '200':
@@ -416,6 +340,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      parameters:
+      - $ref: '#/components/parameters/XRequestID'
+      - $ref: '#/components/parameters/XTenantID'
   /v1/health:
     get:
       tags:
@@ -430,6 +357,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthStatusResponse'
+      security: []
   /v1/metrics:
     get:
       tags:
@@ -452,6 +380,8 @@ paths:
         schema:
           type: string
           title: X-Tenant-Id
+      - $ref: '#/components/parameters/XRequestID'
+      - $ref: '#/components/parameters/XTenantID'
       responses:
         '200':
           description: Successful Response
@@ -478,6 +408,7 @@ paths:
           content:
             application/json:
               schema: {}
+      security: []
 components:
   schemas:
     AsyncJobResponse:
@@ -1218,3 +1149,35 @@ components:
       - msg
       - type
       title: ValidationError
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Static, per-tenant API key (≥ 256-bit entropy).
+  parameters:
+    XRequestID:
+      name: X-Request-ID
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: 550e8400-e29b-41d4-a716-446655440000
+    XTenantID:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Caller's cityhall slug.
+      example: ph-balta-doamnei
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: 550e8400-e29b-41d4-a716-446655440001
+security:
+- bearerAuth: []
