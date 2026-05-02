@@ -65,6 +65,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://lex:lex@localhost:5432/scraper
+        run: alembic upgrade head
+
       - name: Run tests
         env:
           API_KEY: dev-api-key-change-me
