@@ -1,5 +1,7 @@
 import uuid
-from locust import HttpUser, task, between
+
+from locust import HttpUser, between, task
+
 
 class ScraperUser(HttpUser):
     wait_time = between(5, 5)
@@ -12,8 +14,8 @@ class ScraperUser(HttpUser):
             headers={
                 "Authorization": "Bearer dev-api-key-change-me",
                 "X-Request-ID": str(uuid.uuid4()),
-                "X-Tenant-ID": "load-tenant"
-            }
+                "X-Tenant-ID": "load-tenant",
+            },
         )
 
     @task(1)
@@ -24,6 +26,6 @@ class ScraperUser(HttpUser):
             headers={
                 "Authorization": "Bearer dev-api-key-change-me",
                 "X-Request-ID": str(uuid.uuid4()),
-                "X-Tenant-ID": "load-tenant"
-            }
+                "X-Tenant-ID": "load-tenant",
+            },
         )

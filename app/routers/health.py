@@ -1,13 +1,13 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """GET /v1/health — service health check with real dependency probing."""
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import time
-import asyncio
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
@@ -99,10 +99,9 @@ async def _probe_dependencies(
             return _cached_deps or {}, _cached_queue_depth
         except Exception as exc:
             import logging
-            logging.error(f"Probe task failed with: {repr(exc)}")
-            # Probe failed in the other task; fall through and run our own probe
-            pass
 
+            logging.error(f"Probe task failed with: {exc!r}")
+            # Probe failed in the other task; fall through and run our own probe
 
     async def _do_probe() -> None:
         nonlocal request, store
@@ -166,9 +165,7 @@ async def healthcheck(
     store: JobStore = Depends(get_job_store),
 ) -> HealthStatusResponse:
     """Service health check with real dependency probing."""
-    uptime_seconds = int(
-        time.monotonic() - request.app.state.started_monotonic
-    )
+    uptime_seconds = int(time.monotonic() - request.app.state.started_monotonic)
 
     deps, queue_depth = await _probe_dependencies(request, store)
 

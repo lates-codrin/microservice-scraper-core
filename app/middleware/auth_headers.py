@@ -147,7 +147,9 @@ class AuthHeadersMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
         response.headers["X-Request-ID"] = incoming_request_id
-        response.headers["X-Vendor-Trace-ID"] = incoming_request_id  # mirrors request-id in absence of OTel
+        response.headers["X-Vendor-Trace-ID"] = (
+            incoming_request_id  # mirrors request-id in absence of OTel
+        )
         # Server-Timing stub — populated per-endpoint when timing data is available
         if "Server-Timing" not in response.headers:
             response.headers["Server-Timing"] = "app;dur=0"

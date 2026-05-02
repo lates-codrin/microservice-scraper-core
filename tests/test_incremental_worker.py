@@ -1,9 +1,8 @@
-import asyncio
 from types import SimpleNamespace
+
 import pytest
 
 from app.crawl_runner import _persist_document
-from app.models.enums import DocType
 
 
 class FakeSession:
@@ -64,7 +63,9 @@ async def test_persist_skips_known_hash():
         "raw_html": "<html></html>",
     }
 
-    await _persist_document(session, "job_1", "tenant_x", doc, redact_pii=False, async_redis=async_redis)
+    await _persist_document(
+        session, "job_1", "tenant_x", doc, redact_pii=False, async_redis=async_redis
+    )
 
     assert session.committed is False
     assert session.added == []
@@ -100,7 +101,9 @@ async def test_persist_saves_and_adds_hash():
         "raw_html": "<html></html>",
     }
 
-    await _persist_document(session, "job_2", "tenant_x", doc, redact_pii=False, async_redis=async_redis)
+    await _persist_document(
+        session, "job_2", "tenant_x", doc, redact_pii=False, async_redis=async_redis
+    )
 
     assert session.committed is True
     assert len(session.added) == 1

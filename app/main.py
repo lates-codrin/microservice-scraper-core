@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """FastAPI application factory and global exception handlers."""
 
@@ -9,20 +9,31 @@ import time
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
-from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.middleware.auth_headers import AuthHeadersMiddleware
-from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.response_headers import ResponseHeadersMiddleware
 from app.models.common import ErrorEnvelope, ErrorPayload
-from app.routers import admin, classify, crawl, docs, extract, health, jobs, metrics, openapi_spec, scrape
+from app.routers import (
+    admin,
+    classify,
+    crawl,
+    docs,
+    extract,
+    health,
+    jobs,
+    metrics,
+    openapi_spec,
+    scrape,
+)
 from app.services.metrics import MetricsMiddleware, get_metrics
-from app.services.otel import init_otel, init_instrumentors
-from app.settings import settings
+from app.services.otel import init_instrumentors, init_otel
 from app.services.otel_logging import configure_structured_logging
+from app.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -34,19 +45,47 @@ _HTTP_ERROR_CODES: dict[int, str] = {
     429: "rate_limited",
 }
 
+
 class HeaderValidationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         req_id = request.headers.get("x-request-id")
         tenant_id = request.headers.get("x-tenant-id")
         idem_key = request.headers.get("idempotency-key")
-        
+
         if req_id and ("\n" in req_id or "\r" in req_id):
-            return JSONResponse(status_code=400, content={"error": {"code": "invalid_request", "message": "Invalid X-Request-ID", "request_id": ""}})
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": {
+                        "code": "invalid_request",
+                        "message": "Invalid X-Request-ID",
+                        "request_id": "",
+                    }
+                },
+            )
         if tenant_id and ("\n" in tenant_id or "\r" in tenant_id):
-            return JSONResponse(status_code=400, content={"error": {"code": "invalid_request", "message": "Invalid X-Tenant-ID", "request_id": req_id or ""}})
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": {
+                        "code": "invalid_request",
+                        "message": "Invalid X-Tenant-ID",
+                        "request_id": req_id or "",
+                    }
+                },
+            )
         if idem_key and ("\n" in idem_key or "\r" in idem_key):
-            return JSONResponse(status_code=400, content={"error": {"code": "invalid_request", "message": "Invalid Idempotency-Key", "request_id": req_id or ""}})
-            
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": {
+                        "code": "invalid_request",
+                        "message": "Invalid Idempotency-Key",
+                        "request_id": req_id or "",
+                    }
+                },
+            )
+
         return await call_next(request)
 
 
@@ -101,8 +140,8 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=[
             "http://localhost:3000",
-            "https://lexy.latescodrin.com"  # YES I GET IT I SHOULD USE ENV VARS FOR THIS
-        ], # TODO: make this configurable via env vars hehe later on tho -- codrin
+            "https://lexy.latescodrin.com",  # YES I GET IT I SHOULD USE ENV VARS FOR THIS
+        ],  # TODO: make this configurable via env vars hehe later on tho -- codrin
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -127,9 +166,7 @@ def create_app() -> FastAPI:
             if "input" in safe_err:
                 safe_err["input"] = str(safe_err["input"])
             if "ctx" in safe_err:
-                safe_err["ctx"] = {
-                    k: str(v) for k, v in safe_err["ctx"].items()
-                }
+                safe_err["ctx"] = {k: str(v) for k, v in safe_err["ctx"].items()}
             safe_errors.append(safe_err)
 
         return JSONResponse(
@@ -146,9 +183,7 @@ def create_app() -> FastAPI:
         )
 
     @application.exception_handler(StarletteHTTPException)
-    async def http_exception_handler(
-        request: Request, exc: StarletteHTTPException
-    ) -> JSONResponse:
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
         """HTTP exceptions  standard error envelope with code mapping."""
         request_id = getattr(
             request.state,
@@ -162,11 +197,7 @@ def create_app() -> FastAPI:
             content=ErrorEnvelope(
                 error=ErrorPayload(
                     code=code,
-                    message=(
-                        exc.detail
-                        if isinstance(exc.detail, str)
-                        else str(exc.detail)
-                    ),
+                    message=(exc.detail if isinstance(exc.detail, str) else str(exc.detail)),
                     request_id=request_id,
                 )
             ).model_dump(mode="json"),

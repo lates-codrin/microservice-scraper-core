@@ -14,13 +14,14 @@ Run:
 
 Requires a running server with API_KEY=dev-api-key-change-me.
 """
+
 from __future__ import annotations
 
 import json
 import os
-import time
 import uuid
-from locust import HttpUser, between, task, events
+
+from locust import HttpUser, between, task
 
 API_KEY = os.getenv("API_KEY", "dev-api-key-change-me")
 TENANT = os.getenv("DEFAULT_TENANT_ID", "ph-balta-doamnei")

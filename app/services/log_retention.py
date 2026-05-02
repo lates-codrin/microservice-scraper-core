@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-import logging
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -21,7 +21,7 @@ class LogRetentionPolicy:
         cleanup_interval_hours: int = 24,
     ):
         """Initialize retention policy.
-        
+
         Args:
             retention_days: Max days to retain logs (default: 7 per spec)
             cleanup_interval_hours: How often to run cleanup (default: daily)
@@ -36,16 +36,16 @@ class LogRetentionPolicy:
 
     async def cleanup_old_logs(self, job_store: Any) -> int:
         """Delete logs and job data older than retention period.
-        
+
         Args:
             job_store: JobStore instance for database cleanup
-            
+
         Returns:
             Number of records deleted
         """
         cutoff = self.get_retention_cutoff()
         deleted_count = 0
-        
+
         try:
             # Delete old jobs from database
             deleted_count = await job_store.delete_jobs_before(cutoff)
@@ -56,15 +56,16 @@ class LogRetentionPolicy:
             )
         except Exception as exc:
             logger.error("Log cleanup failed: %s", exc)
-            
+
         return deleted_count
 
     async def start_cleanup_task(self, job_store: Any) -> None:
         """Start background cleanup task.
-        
+
         Args:
             job_store: JobStore instance for cleanup operations
         """
+
         async def cleanup_loop():
             while True:
                 await asyncio.sleep(self.cleanup_interval_hours * 3600)

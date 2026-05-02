@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 POST /v1/admin/flush  ” dev-only: clear idempotency keys + cancel active jobs.
@@ -6,6 +6,7 @@ POST /v1/admin/flush  ” dev-only: clear idempotency keys + cancel active jobs.
 Guarded by DOCS_ENABLED=true (same flag that enables the Swagger UI).
 Never expose in production (set DOCS_ENABLED=false).
 """
+
 from __future__ import annotations
 
 import logging
@@ -49,9 +50,11 @@ async def flush_queue(
     redis = store.redis
 
     # Cancel all active jobs for this tenant
-    from sqlalchemy import select, update
-    from app.models.db import DbCrawlJob
     from datetime import UTC, datetime
+
+    from sqlalchemy import select, update
+
+    from app.models.db import DbCrawlJob
 
     stmt = select(DbCrawlJob).where(
         DbCrawlJob.tenant_id == tenant_id,
@@ -83,12 +86,15 @@ async def flush_queue(
 
     logger.warning(
         "admin/flush: tenant=%s cancelled %d jobs, deleted %d idem keys",
-        tenant_id, len(cancelled_ids), deleted_keys,
+        tenant_id,
+        len(cancelled_ids),
+        deleted_keys,
     )
 
-    return JSONResponse(content={
-        "cancelled_jobs": cancelled_ids,
-        "idempotency_keys_cleared": deleted_keys,
-        "tenant_id": tenant_id,
-    })
-
+    return JSONResponse(
+        content={
+            "cancelled_jobs": cancelled_ids,
+            "idempotency_keys_cleared": deleted_keys,
+            "tenant_id": tenant_id,
+        }
+    )

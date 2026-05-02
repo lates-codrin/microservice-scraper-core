@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Abstract interfaces for service layer ” enables DIP and drop-in swapping."""
 
@@ -25,20 +25,17 @@ class JobStoreProtocol(ABC):
         request_fingerprint: str,
         incremental: IncrementalOptions | None = None,
         callback_url: Any | None = None,
-    ) -> CrawlJob:
-        ...
+    ) -> CrawlJob: ...
 
     @abstractmethod
     async def create_scrape_job(
         self,
         tenant_id: str,
         request_payload: dict[str, Any] | None = None,
-    ) -> str:
-        ...
+    ) -> str: ...
 
     @abstractmethod
-    async def get(self, job_id: str, tenant_id: str | None = None) -> CrawlJob | None:
-        ...
+    async def get(self, job_id: str, tenant_id: str | None = None) -> CrawlJob | None: ...
 
     @abstractmethod
     async def update(
@@ -49,20 +46,16 @@ class JobStoreProtocol(ABC):
         progress: CrawlProgress | None = None,
         stats: CrawlStats | None = None,
         error: dict[str, Any] | None = None,
-    ) -> CrawlJob | None:
-        ...
+    ) -> CrawlJob | None: ...
 
     @abstractmethod
-    async def delete(self, job_id: str) -> bool:
-        ...
+    async def delete(self, job_id: str) -> bool: ...
 
     @abstractmethod
-    async def cancel_job(self, job_id: str) -> CrawlJob | None:
-        ...
+    async def cancel_job(self, job_id: str) -> CrawlJob | None: ...
 
     @abstractmethod
-    async def document_count(self, job_id: str) -> int:
-        ...
+    async def document_count(self, job_id: str) -> int: ...
 
     @abstractmethod
     async def get_documents(
@@ -74,18 +67,15 @@ class JobStoreProtocol(ABC):
         doc_type: str | None,
         min_confidence: float,
         changed_only: bool = False,
-    ) -> tuple[list[ScrapedDocument], str | None, bool, int]:
-        ...
+    ) -> tuple[list[ScrapedDocument], str | None, bool, int]: ...
 
     @abstractmethod
     async def add_document(
         self, job_id: str, tenant_id: str, document: ScrapedDocument
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    async def queue_depth(self) -> int:
-        ...
+    async def queue_depth(self) -> int: ...
 
 
 class ClassifierProtocol(ABC):
@@ -96,8 +86,7 @@ class ClassifierProtocol(ABC):
         self,
         url: str | None,
         text: str,
-    ) -> tuple[DocType, float, list[dict[str, Any]]]:
-        ...
+    ) -> tuple[DocType, float, list[dict[str, Any]]]: ...
 
 
 class FieldExtractorProtocol(ABC):
@@ -108,22 +97,17 @@ class FieldExtractorProtocol(ABC):
         self,
         text: str,
         doc_type: DocType,
-    ) -> tuple[dict[str, Any], dict[str, float]]:
-        ...
+    ) -> tuple[dict[str, Any], dict[str, float]]: ...
 
 
 class ExtractorProtocol(ABC):
     """Contract for content extraction from raw bytes."""
 
     @abstractmethod
-    def can_handle(self, mime_type: str) -> bool:
-        ...
+    def can_handle(self, mime_type: str) -> bool: ...
 
     @abstractmethod
-    def extract(
-        self, content: bytes, source_url: str = ""
-    ) -> Any:
-        ...
+    def extract(self, content: bytes, source_url: str = "") -> Any: ...
 
 
 __all__ = [
@@ -132,4 +116,3 @@ __all__ = [
     "FieldExtractorProtocol",
     "JobStoreProtocol",
 ]
-

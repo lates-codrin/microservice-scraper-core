@@ -1,10 +1,11 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Tests for incremental crawling, deduplication, pagination, and 410 Gone."""
 
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
-from uuid import uuid4
 
 from app.main import app
 from app.settings import settings
@@ -24,7 +25,7 @@ def _h(tenant: str = TENANT_A, ikey: str | None = None) -> dict:
     return h
 
 
-@pytest.fixture()
+@pytest.fixture
 def client():
     with TestClient(app) as c:
         yield c
@@ -77,4 +78,3 @@ def test_idempotency_returns_same_job(client):
 
     assert resp1.status_code == 202
     assert resp2.json()["job_id"] == resp1.json()["job_id"]
-

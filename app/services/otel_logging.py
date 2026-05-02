@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any
 
 from opentelemetry import trace
 
@@ -16,7 +15,7 @@ class OTelStructuredFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """Format record with OTel trace context as JSON.
-        
+
         Adds:
         - trace_id: current OpenTelemetry trace ID (hex)
         - span_id: current OpenTelemetry span ID (hex)
@@ -84,7 +83,7 @@ class OTelStructuredFormatter(logging.Formatter):
 
 def configure_structured_logging(log_level: str = "INFO") -> None:
     """Configure root logger with OTel-aware structured logging.
-    
+
     Args:
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     """

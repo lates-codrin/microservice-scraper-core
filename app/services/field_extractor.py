@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Structured field extraction for specific document types."""
 
@@ -23,7 +23,7 @@ def extract_hcl_fields(text: str) -> tuple[dict[str, Any], dict[str, float]]:
     }
     confidence: dict[str, float] = {}
 
-    match_num = re.search(r"(\d+/\d{4})", text)
+    match_num = re.search(r"(?:nr\.?|nr)\s*(\d+(?:/\d{4})?)", text, re.IGNORECASE)
     if match_num:
         fields["hcl_number"] = match_num.group(1)
         confidence["hcl_number"] = 0.99
@@ -40,7 +40,7 @@ def extract_hcl_fields(text: str) -> tuple[dict[str, Any], dict[str, float]]:
         confidence["subject"] = 0.85
 
     match_votes = re.search(
-        r"pentru:\s*(\d+).*?împotrivă:\s*(\d+).*?abțineri:\s*(\d+)",
+        r"pentru:\s*(\d+).*?(?:împotrivă|impotriva):\s*(\d+).*?(?:abțineri|abtineri):\s*(\d+)",
         text,
         re.IGNORECASE,
     )
@@ -62,7 +62,7 @@ def extract_dispozitie_primar_fields(text: str) -> tuple[dict[str, Any], dict[st
         "issue_date": None,
     }
     confidence: dict[str, float] = {}
-    match = re.search(r"(?:Disp|Dispoziție)[.:]?\s*(\d+/\d{4})", text, re.IGNORECASE)
+    match = re.search(r"(?:Disp|Dispoziție|Dispozitie)[.:]?\s*(\d+/\d{4})", text, re.IGNORECASE)
     if match:
         fields["dispozitie_number"] = match.group(1)
         confidence["dispozitie_number"] = 0.85
@@ -217,9 +217,7 @@ def extract_other_fields(text: str) -> tuple[dict[str, Any], dict[str, float]]:
     return {}, {}
 
 
-def extract_fields(
-    text: str, doc_type: DocType
-) -> tuple[dict[str, Any], dict[str, float]]:
+def extract_fields(text: str, doc_type: DocType) -> tuple[dict[str, Any], dict[str, float]]:
     """Dispatch extraction by doc_type. Now supports all 18 doc_types."""
     extractors = {
         DocType.hcl: extract_hcl_fields,
@@ -241,7 +239,7 @@ def extract_fields(
         DocType.declaratie_avere: extract_declaratie_avere_fields,
         DocType.other: extract_other_fields,
     }
-    
+
     extractor = extractors.get(doc_type, extract_other_fields)
     return extractor(text)
 

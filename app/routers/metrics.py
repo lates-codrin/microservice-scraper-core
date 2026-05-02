@@ -23,11 +23,11 @@ async def metrics(
     x_tenant_id: str = Header(..., alias="X-Tenant-ID"),
 ) -> str:
     """Prometheus metrics exposition format in text/plain.
-    
+
     Requires:
     - X-Request-ID: UUID for request tracing
     - X-Tenant-ID: Tenant identifier
-    
+
     Returns metrics with labels for method, status, endpoint, dependency, error_type.
     """
     metrics_collector = get_metrics()

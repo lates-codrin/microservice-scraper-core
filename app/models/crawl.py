@@ -73,10 +73,11 @@ class CrawlConfig(BaseModel):
             return v
         # Extract hosts from seed_urls via the partially-validated data
         seeds = (info.data or {}).get("seed_urls", [])
-        return list(dict.fromkeys(
-            urlparse(str(u)).hostname or "" for u in seeds
-            if urlparse(str(u)).hostname
-        ))
+        return list(
+            dict.fromkeys(
+                urlparse(str(u)).hostname or "" for u in seeds if urlparse(str(u)).hostname
+            )
+        )
 
     max_depth: int = Field(default=5, ge=1, le=20)
     max_pages: int = Field(default=2000, ge=1, le=100000)

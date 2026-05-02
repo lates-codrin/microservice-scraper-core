@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 Crawl frontier ” async BFS via RabbitMQ + Redis.
@@ -29,17 +29,15 @@ URL filtering rules (applied before enqueue):
 PDF links: if follow_pdfs=True, enqueue .pdf URLs as leaf nodes
   (no further link extraction after fetch).
 """
+
 from __future__ import annotations
 
-import asyncio
-import hashlib
 import json
 import logging
 import re
-import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
-from urllib.parse import urljoin, urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse
 
 if TYPE_CHECKING:
     from redis.asyncio import Redis  # type: ignore[import-untyped]
@@ -152,6 +150,7 @@ def extract_links(html: bytes, base_url: str) -> list[str]:
     """Extract all <a href> from HTML; normalise to absolute URLs."""
     try:
         from lxml import html as lxml_html  # type: ignore[import-untyped]
+
         doc = lxml_html.fromstring(html, base_url=base_url)
         doc.make_links_absolute(base_url, resolve_base_href=True)
         links: list[str] = []
@@ -174,6 +173,7 @@ def extract_links(html: bytes, base_url: str) -> list[str]:
 async def _fetch_bytes(url: str, user_agent: str, timeout_ms: int) -> bytes:
     """Simple httpx GET; used for sitemap and robots fetches."""
     import httpx
+
     async with httpx.AsyncClient(timeout=timeout_ms / 1000.0) as client:
         r = await client.get(url, headers={"User-Agent": user_agent})
         r.raise_for_status()
@@ -184,6 +184,7 @@ def _parse_sitemap(xml_bytes: bytes) -> list[str]:
     """Parse sitemap.xml or sitemap_index.xml; return list of loc URLs."""
     try:
         from lxml import etree  # type: ignore[import-untyped]
+
         root = etree.fromstring(xml_bytes)
         ns = {"sm": _SITEMAP_NS}
         # sitemap_index  nested sitemaps
@@ -245,12 +246,9 @@ async def _get_channel(connection):  # type: ignore[return]
 async def _declare_queue(channel, job_id: str):  # type: ignore[return]
     """Declare exchange + queue; return queue object."""
     import aio_pika  # type: ignore[import-untyped]
-    exchange = await channel.declare_exchange(
-        _EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True
-    )
-    queue = await channel.declare_queue(
-        f"urls.{job_id}", durable=True, auto_delete=False
-    )
+
+    exchange = await channel.declare_exchange(_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
+    queue = await channel.declare_queue(f"urls.{job_id}", durable=True, auto_delete=False)
     await queue.bind(exchange, routing_key=f"urls.{job_id}")
     return exchange, queue
 
@@ -258,6 +256,7 @@ async def _declare_queue(channel, job_id: str):  # type: ignore[return]
 async def _publish(exchange, job_id: str, url: str, depth: int, tenant_id: str) -> None:
     """Publish one URL message to RabbitMQ exchange."""
     import aio_pika  # type: ignore[import-untyped]
+
     body = json.dumps(
         {"url": url, "depth": depth, "job_id": job_id, "tenant_id": tenant_id}
     ).encode()
@@ -272,17 +271,17 @@ async def _publish(exchange, job_id: str, url: str, depth: int, tenant_id: str) 
 # ---------------------------------------------------------------------------
 
 
-async def _redis_incr_pages(redis: "Redis", job_id: str) -> int:
+async def _redis_incr_pages(redis: Redis, job_id: str) -> int:
     """Atomic INCR on page counter; return new count."""
     return int(await redis.incr(_KEY_PAGES.format(job_id=job_id)))  # type: ignore[attr-defined]
 
 
-async def _redis_mark_visited(redis: "Redis", job_id: str, norm_url: str) -> bool:
+async def _redis_mark_visited(redis: Redis, job_id: str, norm_url: str) -> bool:
     """SADD; return True if newly added (not previously seen)."""
     return bool(await redis.sadd(_KEY_VISITED.format(job_id=job_id), norm_url))  # type: ignore[attr-defined]
 
 
-async def _redis_update_progress(redis: "Redis", job_id: str, **fields: int) -> None:
+async def _redis_update_progress(redis: Redis, job_id: str, **fields: int) -> None:
     if not fields:
         return
     await redis.hset(  # type: ignore[attr-defined]
@@ -291,7 +290,7 @@ async def _redis_update_progress(redis: "Redis", job_id: str, **fields: int) -> 
     )
 
 
-async def _redis_hincrby(redis: "Redis", job_id: str, field: str, amount: int = 1) -> None:
+async def _redis_hincrby(redis: Redis, job_id: str, field: str, amount: int = 1) -> None:
     await redis.hincrby(_KEY_PROGRESS.format(job_id=job_id), field, amount)  # type: ignore[attr-defined]
 
 
@@ -314,7 +313,7 @@ class Frontier:
         self,
         cfg: FrontierConfig,
         *,
-        redis: "Redis",
+        redis: Redis,
         rmq_connection,  # aio_pika connection
     ) -> None:
         self._cfg = cfg
@@ -327,9 +326,7 @@ class Frontier:
     async def _ensure_channel(self):
         if self._channel is None:
             self._channel = await _get_channel(self._rmq)
-            self._exchange, self._queue = await _declare_queue(
-                self._channel, self._cfg.job_id
-            )
+            self._exchange, self._queue = await _declare_queue(self._channel, self._cfg.job_id)
 
     async def start(self, seed_urls: list[str]) -> None:
         """
@@ -348,9 +345,7 @@ class Frontier:
                 timeout_ms=cfg.timeout_ms,
                 max_pages=cfg.max_pages,
             )
-            logger.info(
-                "job=%s sitemap produced %d URLs", cfg.job_id, len(sitemap_urls)
-            )
+            logger.info("job=%s sitemap produced %d URLs", cfg.job_id, len(sitemap_urls))
 
         # Combine: sitemap first, then seed_urls
         all_seeds = sitemap_urls + seed_urls
@@ -399,9 +394,7 @@ class Frontier:
             # Over cap ” don't enqueue
             return False
 
-        await _publish(
-            self._exchange, cfg.job_id, url, depth=depth, tenant_id=cfg.tenant_id
-        )
+        await _publish(self._exchange, cfg.job_id, url, depth=depth, tenant_id=cfg.tenant_id)
         await _redis_hincrby(self._redis, cfg.job_id, "urls_discovered")
         await _redis_hincrby(self._redis, cfg.job_id, "urls_pending")
         return True
@@ -434,7 +427,9 @@ class Frontier:
 
         # Update bytes_downloaded
         await _redis_hincrby(
-            self._redis, cfg.job_id, "bytes_downloaded",
+            self._redis,
+            cfg.job_id,
+            "bytes_downloaded",
             len(fetch_result.content),
         )
 
@@ -499,4 +494,3 @@ class Frontier:
     async def close(self) -> None:
         if self._channel:
             await self._channel.close()
-

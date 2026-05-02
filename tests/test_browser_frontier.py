@@ -23,13 +23,12 @@ Covers:
     - PDF leaf enqueue when follow_pdfs=True
     - PDF NOT walked further (no child extraction)
 """
+
 from __future__ import annotations
 
 import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -48,36 +47,48 @@ def _run(coro):
 class TestLooksLikeSPA:
     def test_noscript_detected(self):
         from app.services.browser import _looks_like_spa
+
         assert _looks_like_spa(b"<html><noscript>enable JS</noscript></html>") is True
 
     def test_empty_root_div_detected(self):
         from app.services.browser import _looks_like_spa
+
         assert _looks_like_spa(b'<div id="root"></div>') is True
 
     def test_populated_root_div_not_spa(self):
         from app.services.browser import _looks_like_spa
+
         assert _looks_like_spa(b'<div id="root"><p>content</p></div>') is False
 
     def test_plain_html_not_spa(self):
         from app.services.browser import _looks_like_spa
-        assert _looks_like_spa("<html><body><p>Hello Timișoara</p></body></html>".encode("utf-8")) is False
+
+        assert (
+            _looks_like_spa("<html><body><p>Hello Timișoara</p></body></html>".encode())
+            is False
+        )
 
     def test_noscript_uppercase(self):
         from app.services.browser import _looks_like_spa
+
         assert _looks_like_spa(b"<NOSCRIPT>enable JS</NOSCRIPT>") is True
 
 
 class TestRenderPage:
     """render_page() applies render_javascript policy correctly."""
 
-    def _mock_pool(self, html: bytes = b"<html>rendered</html>", url: str = "https://x.ro/") -> MagicMock:
+    def _mock_pool(
+        self, html: bytes = b"<html>rendered</html>", url: str = "https://x.ro/"
+    ) -> MagicMock:
         pool = MagicMock()
         from app.services.browser import RenderResult
+
         pool.render = AsyncMock(return_value=RenderResult(html=html, url=url))
         return pool
 
     def test_never_returns_raw_no_playwright(self):
         from app.services.browser import render_page
+
         pool = self._mock_pool()
         result_html, final_url, used_pw = _run(
             render_page(
@@ -93,6 +104,7 @@ class TestRenderPage:
 
     def test_always_calls_playwright(self):
         from app.services.browser import render_page
+
         rendered = b"<html>js-rendered</html>"
         pool = self._mock_pool(html=rendered)
         result_html, _url, used_pw = _run(
@@ -104,6 +116,7 @@ class TestRenderPage:
 
     def test_auto_non_spa_no_playwright(self):
         from app.services.browser import render_page
+
         raw = b"<html><body><p>content</p></body></html>"
         pool = self._mock_pool()
         _html, _url, used_pw = _run(
@@ -119,6 +132,7 @@ class TestRenderPage:
 
     def test_auto_noscript_triggers_playwright(self):
         from app.services.browser import render_page
+
         raw = b"<html><noscript>enable JS</noscript></html>"
         rendered = b"<html><body>actual content</body></html>"
         pool = self._mock_pool(html=rendered)
@@ -135,6 +149,7 @@ class TestRenderPage:
 
     def test_auto_empty_root_div_triggers_playwright(self):
         from app.services.browser import render_page
+
         raw = b'<html><body><div id="root"></div></body></html>'
         pool = self._mock_pool()
         _html, _url, used_pw = _run(
@@ -150,10 +165,9 @@ class TestRenderPage:
     def test_auto_no_raw_bytes_triggers_playwright(self):
         """No raw_html_bytes provided in auto mode → go straight to Playwright."""
         from app.services.browser import render_page
+
         pool = self._mock_pool()
-        _html, _url, used_pw = _run(
-            render_page("https://x.ro/", render_mode="auto", pool=pool)
-        )
+        _html, _url, used_pw = _run(render_page("https://x.ro/", render_mode="auto", pool=pool))
         assert used_pw is True
 
 
@@ -173,7 +187,9 @@ class TestCrawlRunnerFetchAdapter:
             timeout_ms=4567,
         )
 
-        with patch("app.crawl_runner.fetch", new=AsyncMock(return_value=MagicMock())) as mocked_fetch:
+        with patch(
+            "app.crawl_runner.fetch", new=AsyncMock(return_value=MagicMock())
+        ) as mocked_fetch:
             _run(_fetch_for_frontier("https://example.com/page", cfg))
 
         mocked_fetch.assert_awaited_once_with(
@@ -199,7 +215,9 @@ class TestCrawlRunnerFetchAdapter:
         )
         fake_redis = object()
 
-        with patch("app.crawl_runner.fetch", new=AsyncMock(return_value=MagicMock())) as mocked_fetch:
+        with patch(
+            "app.crawl_runner.fetch", new=AsyncMock(return_value=MagicMock())
+        ) as mocked_fetch:
             _run(
                 _fetch_for_frontier(
                     "https://example.com/page",
@@ -227,6 +245,7 @@ class TestCrawlRunnerFetchAdapter:
 
 def _make_cfg(**kwargs):
     from app.services.frontier import FrontierConfig
+
     defaults = dict(
         job_id="cj_test123",
         tenant_id="ph-test",
@@ -243,46 +262,55 @@ class TestUrlAllowed:
 
     def test_matching_domain_allowed(self):
         from app.services.frontier import _url_allowed
+
         cfg = _make_cfg(allowed_domains=["primaria-exemplu.ro"])
         assert _url_allowed("https://primaria-exemplu.ro/hcl/", cfg) is True
 
     def test_wrong_domain_blocked(self):
         from app.services.frontier import _url_allowed
+
         cfg = _make_cfg(allowed_domains=["primaria-exemplu.ro"])
         assert _url_allowed("https://evil.com/hcl/", cfg) is False
 
     def test_exclude_pattern_blocks(self):
         from app.services.frontier import _url_allowed
+
         cfg = _make_cfg(exclude_patterns=[r"/galerie-foto/"])
         assert _url_allowed("https://primaria-exemplu.ro/galerie-foto/img1", cfg) is False
 
     def test_exclude_pattern_image_ext(self):
         from app.services.frontier import _url_allowed
+
         cfg = _make_cfg(exclude_patterns=[r"\.(jpg|png|gif|mp4)$"])
         assert _url_allowed("https://primaria-exemplu.ro/foto/img.jpg", cfg) is False
 
     def test_non_excluded_url_allowed(self):
         from app.services.frontier import _url_allowed
+
         cfg = _make_cfg(exclude_patterns=[r"/galerie-foto/"])
         assert _url_allowed("https://primaria-exemplu.ro/hcl/doc.pdf", cfg) is True
 
     def test_include_patterns_gate_pass(self):
         from app.services.frontier import _url_allowed
+
         cfg = _make_cfg(include_patterns=[r"/hcl/", r"/dispozitii/"])
         assert _url_allowed("https://primaria-exemplu.ro/hcl/125", cfg) is True
 
     def test_include_patterns_gate_fail(self):
         from app.services.frontier import _url_allowed
+
         cfg = _make_cfg(include_patterns=[r"/hcl/", r"/dispozitii/"])
         assert _url_allowed("https://primaria-exemplu.ro/stiri/", cfg) is False
 
     def test_empty_include_patterns_allows_all_in_domain(self):
         from app.services.frontier import _url_allowed
+
         cfg = _make_cfg(include_patterns=[])
         assert _url_allowed("https://primaria-exemplu.ro/anything", cfg) is True
 
     def test_subdomain_of_allowed_domain_accepted(self):
         from app.services.frontier import _url_allowed
+
         cfg = _make_cfg(allowed_domains=["primaria-exemplu.ro"])
         # www.primaria-exemplu.ro is subdomain → allowed
         assert _url_allowed("https://www.primaria-exemplu.ro/hcl/", cfg) is True
@@ -291,6 +319,7 @@ class TestUrlAllowed:
 class TestLinkExtraction:
     def test_extracts_absolute_links(self):
         from app.services.frontier import extract_links
+
         html = b'<html><body><a href="/hcl/125">HCL</a><a href="https://other.ro/">ext</a></body></html>'
         links = extract_links(html, "https://primaria-exemplu.ro/")
         assert any("hcl/125" in l for l in links)
@@ -298,17 +327,20 @@ class TestLinkExtraction:
 
     def test_relative_links_resolved(self):
         from app.services.frontier import extract_links
+
         html = b'<html><body><a href="doc.pdf">PDF</a></body></html>'
         links = extract_links(html, "https://primaria-exemplu.ro/hcl/")
         assert any("doc.pdf" in l for l in links)
 
     def test_no_links_returns_empty(self):
         from app.services.frontier import extract_links
+
         links = extract_links(b"<html><body><p>no links</p></body></html>", "https://x.ro/")
         assert links == []
 
     def test_javascript_links_excluded(self):
         from app.services.frontier import extract_links
+
         html = b'<html><body><a href="javascript:void(0)">click</a></body></html>'
         links = extract_links(html, "https://x.ro/")
         assert all("javascript:" not in l for l in links)
@@ -317,6 +349,7 @@ class TestLinkExtraction:
 class TestSitemapParsing:
     def test_urlset_parsed(self):
         from app.services.frontier import _parse_sitemap
+
         xml = b"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://primaria-exemplu.ro/hcl/125</loc></url>
@@ -328,6 +361,7 @@ class TestSitemapParsing:
 
     def test_sitemap_index_returns_child_sitemaps(self):
         from app.services.frontier import _parse_sitemap
+
         xml = b"""<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap><loc>https://primaria-exemplu.ro/sitemap-hcl.xml</loc></sitemap>
@@ -339,11 +373,13 @@ class TestSitemapParsing:
 
     def test_empty_xml_returns_empty(self):
         from app.services.frontier import _parse_sitemap
+
         locs = _parse_sitemap(b"<urlset></urlset>")
         assert locs == []
 
     def test_invalid_xml_returns_empty(self):
         from app.services.frontier import _parse_sitemap
+
         locs = _parse_sitemap(b"not xml at all")
         assert locs == []
 
@@ -351,15 +387,18 @@ class TestSitemapParsing:
 class TestNormaliseUrl:
     def test_strips_fragment(self):
         from app.services.frontier import _normalise_url
+
         assert "#section" not in _normalise_url("https://x.ro/hcl#section")
 
     def test_lowercase_scheme_host(self):
         from app.services.frontier import _normalise_url
+
         n = _normalise_url("HTTPS://Primaria-Exemplu.Ro/HCL/")
         assert n.startswith("https://primaria-exemplu.ro")
 
     def test_trailing_slash_stripped(self):
         from app.services.frontier import _normalise_url
+
         a = _normalise_url("https://x.ro/hcl/")
         b = _normalise_url("https://x.ro/hcl")
         assert a == b
@@ -383,6 +422,7 @@ class TestFrontierDepthAndCaps:
 
     def test_depth_over_max_not_enqueued(self):
         from app.services.frontier import Frontier
+
         cfg = _make_cfg(max_depth=2)
         redis = self._make_redis()
         frontier = Frontier(cfg, redis=redis, rmq_connection=MagicMock())
@@ -394,6 +434,7 @@ class TestFrontierDepthAndCaps:
 
     def test_depth_at_max_allowed(self):
         from app.services.frontier import Frontier
+
         cfg = _make_cfg(max_depth=2)
         redis = self._make_redis(incr_value=1)
         frontier = Frontier(cfg, redis=redis, rmq_connection=MagicMock())
@@ -404,6 +445,7 @@ class TestFrontierDepthAndCaps:
 
     def test_max_pages_cap_blocks_enqueue(self):
         from app.services.frontier import Frontier
+
         cfg = _make_cfg(max_pages=5)
         # INCR returns 6 → over cap
         redis = self._make_redis(incr_value=6)
@@ -415,6 +457,7 @@ class TestFrontierDepthAndCaps:
 
     def test_duplicate_url_not_enqueued(self):
         from app.services.frontier import Frontier
+
         cfg = _make_cfg()
         # sadd returns 0 → already visited
         redis = self._make_redis(sadd_new=False)
@@ -427,6 +470,7 @@ class TestFrontierDepthAndCaps:
 
     def test_domain_filtered_url_not_enqueued(self):
         from app.services.frontier import Frontier
+
         cfg = _make_cfg(allowed_domains=["primaria-exemplu.ro"])
         redis = self._make_redis()
         frontier = Frontier(cfg, redis=redis, rmq_connection=MagicMock())
@@ -438,15 +482,14 @@ class TestFrontierDepthAndCaps:
     def test_pdf_enqueued_as_leaf_at_max_depth(self):
         """follow_pdfs=True → PDF enqueued at max_depth (no further walking)."""
         from app.services.frontier import Frontier
+
         cfg = _make_cfg(max_depth=3, follow_pdfs=True)
         redis = self._make_redis(incr_value=1)
         frontier = Frontier(cfg, redis=redis, rmq_connection=MagicMock())
         exchange = self._make_exchange()
         frontier._exchange = exchange
         frontier._channel = MagicMock()
-        result = _run(
-            frontier.enqueue("https://primaria-exemplu.ro/hcl/doc.pdf", depth=3)
-        )
+        result = _run(frontier.enqueue("https://primaria-exemplu.ro/hcl/doc.pdf", depth=3))
         assert result is True
         # message published
         exchange.publish.assert_called_once()

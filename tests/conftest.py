@@ -9,6 +9,7 @@ pooled connection from a previous test's loop raises
 Using NullPool (no persistent pool) means each DB operation creates and
 immediately closes its own connection, so there is no cross-loop state.
 """
+
 from __future__ import annotations
 
 import os
@@ -34,12 +35,14 @@ def patch_crypto():
     """Mock out slow crypto algorithms to speed up tests significantly."""
     try:
         import bcrypt
+
         bcrypt.checkpw = lambda password, hashed: True
     except ImportError:
         pass
 
     try:
         from passlib.context import CryptContext
+
         CryptContext.verify = lambda self, secret, hash: True
     except ImportError:
         pass
@@ -92,6 +95,7 @@ def flush_rate_limit_keys():
 
     try:
         from app.settings import settings
+
         redis_url = settings.redis_url
     except Exception:
         redis_url = "redis://localhost:6379/0"
@@ -106,7 +110,7 @@ def flush_rate_limit_keys():
         yield
 
 
-def _flush(r: "redis_lib.Redis") -> None:  # type: ignore[name-defined]
+def _flush(r: redis_lib.Redis) -> None:  # type: ignore[name-defined]
     """Delete every ratelimit:* key without flushing the whole DB."""
     keys = r.keys("ratelimit:*")
     if keys:

@@ -3,16 +3,15 @@
 """Tests for OpenTelemetry integration."""
 
 import os
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from app.services.otel import init_otel, init_instrumentors
+from app.services.otel import init_instrumentors, init_otel
 
 
 def test_otel_disabled_by_default():
     """OpenTelemetry TracerProvider initialized but exporter disabled by default."""
     os.environ.pop("OTEL_ENABLED", None)
-    
+
     # Should not raise, just initializes SDK
     init_otel("test-service")
 
@@ -20,7 +19,7 @@ def test_otel_disabled_by_default():
 def test_otel_initialization_enabled():
     """OpenTelemetry tries to initialize Jaeger when enabled."""
     os.environ["OTEL_ENABLED"] = "true"
-    
+
     # Should not raise
     init_otel("test-service")
 
@@ -32,7 +31,7 @@ def test_init_instrumentors_calls_all_libraries():
             with patch("app.services.otel.SQLAlchemyInstrumentor") as mock_sqlalchemy:
                 with patch("app.services.otel.RedisInstrumentor") as mock_redis:
                     init_instrumentors()
-                    
+
                     # Verify all instrumentors were called
                     mock_fastapi.instrument.assert_called_once()
                     mock_httpx.instrument.assert_called_once()

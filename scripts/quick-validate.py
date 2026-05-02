@@ -1,5 +1,6 @@
-import yaml
 import sys
+
+import yaml
 
 try:
     with open("/vercel/share/v0-project/scraper-api-spec.yaml") as f:

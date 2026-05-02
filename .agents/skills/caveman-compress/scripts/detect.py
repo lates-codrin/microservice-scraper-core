@@ -10,11 +10,42 @@ COMPRESSIBLE_EXTENSIONS = {".md", ".txt", ".markdown", ".rst"}
 
 # Extensions that are code/config and should be skipped
 SKIP_EXTENSIONS = {
-    ".py", ".js", ".ts", ".tsx", ".jsx", ".json", ".yaml", ".yml",
-    ".toml", ".env", ".lock", ".css", ".scss", ".html", ".xml",
-    ".sql", ".sh", ".bash", ".zsh", ".go", ".rs", ".java", ".c",
-    ".cpp", ".h", ".hpp", ".rb", ".php", ".swift", ".kt", ".lua",
-    ".dockerfile", ".makefile", ".csv", ".ini", ".cfg",
+    ".py",
+    ".js",
+    ".ts",
+    ".tsx",
+    ".jsx",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".env",
+    ".lock",
+    ".css",
+    ".scss",
+    ".html",
+    ".xml",
+    ".sql",
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".go",
+    ".rs",
+    ".java",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".rb",
+    ".php",
+    ".swift",
+    ".kt",
+    ".lua",
+    ".dockerfile",
+    ".makefile",
+    ".csv",
+    ".ini",
+    ".cfg",
 }
 
 # Patterns that indicate a line is code
@@ -48,11 +79,7 @@ def _is_yaml_content(lines: list[str]) -> bool:
     yaml_indicators = 0
     for line in lines[:30]:
         stripped = line.strip()
-        if stripped.startswith("---"):
-            yaml_indicators += 1
-        elif re.match(r"^\w[\w\s]*:\s", stripped):
-            yaml_indicators += 1
-        elif stripped.startswith("- ") and ":" in stripped:
+        if stripped.startswith("---") or re.match(r"^\w[\w\s]*:\s", stripped) or (stripped.startswith("- ") and ":" in stripped):
             yaml_indicators += 1
     # If most non-empty lines look like YAML
     non_empty = sum(1 for l in lines[:30] if l.strip())
@@ -71,7 +98,11 @@ def detect_file_type(filepath: Path) -> str:
     if ext in COMPRESSIBLE_EXTENSIONS:
         return "natural_language"
     if ext in SKIP_EXTENSIONS:
-        return "code" if ext not in {".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".env"} else "config"
+        return (
+            "code"
+            if ext not in {".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".env"}
+            else "config"
+        )
 
     # Extensionless files (like CLAUDE.md, TODO) — check content
     if not ext:

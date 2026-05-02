@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Webhook delivery service ” async RabbitMQ worker with HMAC signing.
 
@@ -19,7 +19,6 @@ import ipaddress
 import json
 import logging
 import socket
-from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 import aio_pika
@@ -63,9 +62,7 @@ def _check_callback_ssrf(url: str) -> None:
     try:
         infos = socket.getaddrinfo(hostname, None)
     except socket.gaierror as exc:
-        raise SSRFBlockedError(
-            f"DNS failed for callback host '{hostname}': {exc}"
-        ) from exc
+        raise SSRFBlockedError(f"DNS failed for callback host '{hostname}': {exc}") from exc
     for *_, sockaddr in infos:
         try:
             addr = ipaddress.ip_address(sockaddr[0])
@@ -74,8 +71,7 @@ def _check_callback_ssrf(url: str) -> None:
         for net in _PRIVATE_NETS:
             if addr in net:
                 raise SSRFBlockedError(
-                    f"SSRF: callback host '{hostname}' resolves to "
-                    f"private address '{sockaddr[0]}'"
+                    f"SSRF: callback host '{hostname}' resolves to private address '{sockaddr[0]}'"
                 )
 
 
@@ -108,9 +104,7 @@ async def setup_rabbitmq(
     queue = await channel.declare_queue(WEBHOOK_QUEUE, durable=True)
     await queue.bind(exchange, routing_key=WEBHOOK_QUEUE)
 
-    dlx = await channel.declare_exchange(
-        WEBHOOK_DLX, aio_pika.ExchangeType.DIRECT, durable=True
-    )
+    dlx = await channel.declare_exchange(WEBHOOK_DLX, aio_pika.ExchangeType.DIRECT, durable=True)
     dlq = await channel.declare_queue(WEBHOOK_DLQ, durable=True)
     await dlq.bind(dlx, routing_key=WEBHOOK_DLQ)
 
@@ -160,9 +154,7 @@ async def run_webhook_worker(rabbitmq_url: str, api_key: str) -> None:
             async for message in queue_iter:
                 async with message.process(ignore_processed=True):
                     try:
-                        retry_count: int = message.headers.get(
-                            "x-retry-count", 0
-                        )
+                        retry_count: int = message.headers.get("x-retry-count", 0)
                         data = json.loads(message.body)
                         callback_url = data.pop("callback_url", None)
 
@@ -236,23 +228,16 @@ async def run_webhook_worker(rabbitmq_url: str, api_key: str) -> None:
                                 msg: aio_pika.Message,
                             ) -> None:
                                 await asyncio.sleep(delay_seconds)
-                                await exch.publish(
-                                    msg, routing_key=WEBHOOK_QUEUE
-                                )
+                                await exch.publish(msg, routing_key=WEBHOOK_QUEUE)
 
-                            exchange = await channel.get_exchange(
-                                WEBHOOK_EXCHANGE
-                            )
-                            task = asyncio.create_task(
-                                _requeue_after(delay, exchange, new_msg)
-                            )
+                            exchange = await channel.get_exchange(WEBHOOK_EXCHANGE)
+                            task = asyncio.create_task(_requeue_after(delay, exchange, new_msg))
                             _background_tasks.add(task)
                             task.add_done_callback(_background_tasks.discard)
                             await message.ack()
                         else:
                             logger.error(
-                                "Webhook failed %d times, moving to DLQ "
-                                "for job %s",
+                                "Webhook failed %d times, moving to DLQ for job %s",
                                 WEBHOOK_MAX_RETRIES,
                                 data.get("job_id"),
                             )
@@ -261,9 +246,7 @@ async def run_webhook_worker(rabbitmq_url: str, api_key: str) -> None:
                                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
                                 headers={"x-death-reason": str(exc)},
                             )
-                            await dlx.publish(
-                                dlx_msg, routing_key=WEBHOOK_DLQ
-                            )
+                            await dlx.publish(dlx_msg, routing_key=WEBHOOK_DLQ)
                             await message.ack()
 
 
@@ -275,4 +258,3 @@ __all__ = [
     "run_webhook_worker",
     "setup_rabbitmq",
 ]
-

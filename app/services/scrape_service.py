@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Scrape orchestration service ” coordinates fetch  extract  classify."""
 
@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from app.constants import CONFIDENCE_DEFAULT
 from app.models.document import ScrapedDocument
-from app.models.enums import ContentType, CrawlStatus, DocType, RenderMode
+from app.models.enums import CrawlStatus, DocType
 from app.models.requests import ScrapeRequest
 from app.services.browser import render_page
 from app.services.classifier import classify_document
@@ -40,6 +40,7 @@ async def execute_sync_scrape(
         job_id = await store.create_scrape_job(
             tenant_id,
             request_payload=payload.model_dump(mode="json"),
+            status=CrawlStatus.crawling,
         )
 
     try:
@@ -90,9 +91,7 @@ async def execute_sync_scrape(
         }
 
         if payload.extract_structured and doc_type == DocType.hcl:
-            structured_fields, field_confidence = extract_hcl_fields(
-                extracted.raw_text
-            )
+            structured_fields, field_confidence = extract_hcl_fields(extracted.raw_text)
             metadata["structured_fields"] = structured_fields
             metadata["field_confidence"] = field_confidence
 
@@ -144,4 +143,3 @@ async def execute_sync_scrape(
 
 
 __all__ = ["execute_sync_scrape"]
-

@@ -1,10 +1,8 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Smoke test for the /v1/health endpoint."""
 
 from __future__ import annotations
-
-from uuid import uuid4
 
 from fastapi.testclient import TestClient
 

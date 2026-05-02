@@ -3,6 +3,7 @@ Tests for POST /v1/crawl, GET /v1/jobs/{job_id},
 POST /v1/jobs/{job_id}/cancel, DELETE /v1/jobs/{job_id},
 and idempotency-key collision.
 """
+
 from __future__ import annotations
 
 from uuid import uuid4
@@ -44,7 +45,7 @@ def _headers(idempotency_key: str | None = None, request_id: str | None = None) 
     return h
 
 
-@pytest.fixture()
+@pytest.fixture
 def client():
     """Fresh TestClient with fresh app state per test."""
     with TestClient(app) as c:
@@ -54,6 +55,7 @@ def client():
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
+
 
 def _post_crawl(client, idempotency_key: str, payload: dict = CRAWL_PAYLOAD) -> tuple:
     """POST /v1/crawl. Returns (response, job_id | None)."""
@@ -65,6 +67,7 @@ def _post_crawl(client, idempotency_key: str, payload: dict = CRAWL_PAYLOAD) -> 
 # ---------------------------------------------------------------------------
 # 1. Create job → returns 202 with job_id + queued status
 # ---------------------------------------------------------------------------
+
 
 def test_create_job_returns_202(client):
     ikey = str(uuid4())
@@ -79,6 +82,7 @@ def test_create_job_returns_202(client):
 # ---------------------------------------------------------------------------
 # 2. Poll status — GET /v1/jobs/{job_id}
 # ---------------------------------------------------------------------------
+
 
 def test_get_job_returns_200_with_retry_after(client):
     ikey = str(uuid4())
@@ -104,6 +108,7 @@ def test_get_unknown_job_returns_404(client):
 # 3. Cancel — POST /v1/jobs/{job_id}/cancel
 # ---------------------------------------------------------------------------
 
+
 def test_cancel_job(client):
     ikey = str(uuid4())
     _, job_id = _post_crawl(client, ikey)
@@ -125,6 +130,7 @@ def test_cancel_unknown_job_returns_404(client):
 # ---------------------------------------------------------------------------
 # 4. Delete — DELETE /v1/jobs/{job_id}
 # ---------------------------------------------------------------------------
+
 
 def test_delete_job_returns_204(client):
     ikey = str(uuid4())
@@ -154,6 +160,7 @@ def test_delete_unknown_job_returns_404(client):
 # ---------------------------------------------------------------------------
 # 5. Full flow: create → poll → cancel → delete
 # ---------------------------------------------------------------------------
+
 
 def test_full_lifecycle(client):
     ikey = str(uuid4())
@@ -185,6 +192,7 @@ def test_full_lifecycle(client):
 # 6. Idempotency — same key + same body → existing job (202 or 200)
 # ---------------------------------------------------------------------------
 
+
 def test_idempotency_same_key_same_body_returns_existing(client):
     ikey = str(uuid4())
 
@@ -200,6 +208,7 @@ def test_idempotency_same_key_same_body_returns_existing(client):
 # ---------------------------------------------------------------------------
 # 7. Idempotency — same key + different body → 409 duplicate_job
 # ---------------------------------------------------------------------------
+
 
 def test_idempotency_same_key_different_body_returns_409(client):
     ikey = str(uuid4())
@@ -224,6 +233,7 @@ def test_idempotency_same_key_different_body_returns_409(client):
 # ---------------------------------------------------------------------------
 # 8. X-Request-ID echoed on error responses
 # ---------------------------------------------------------------------------
+
 
 def test_request_id_echoed_on_404(client):
     rid = str(uuid4())

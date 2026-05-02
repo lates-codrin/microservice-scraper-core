@@ -1,8 +1,8 @@
 """Tests for compliance audit follow-ups: response headers, PII redaction, etc."""
 
-import pytest
 import uuid
-from fastapi import FastAPI
+
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
@@ -66,22 +66,28 @@ class TestResponseHeaders:
 
     def test_x_vendor_cache_status_header(self, client):
         """Verify X-Vendor-Cache-Status header is present."""
-        response = client.get("/v1/health", headers={
-            "Authorization": "Bearer dev-api-key-change-me",
-            "X-Request-ID": "550e8400-e29b-41d4-a716-446655440000",
-            "X-Tenant-ID": f"test-tenant-{uuid.uuid4()}",
-        })
+        response = client.get(
+            "/v1/health",
+            headers={
+                "Authorization": "Bearer dev-api-key-change-me",
+                "X-Request-ID": "550e8400-e29b-41d4-a716-446655440000",
+                "X-Tenant-ID": f"test-tenant-{uuid.uuid4()}",
+            },
+        )
         assert response.status_code in (200, 503)  # OK or degraded
         assert "X-Vendor-Cache-Status" in response.headers
         assert response.headers["X-Vendor-Cache-Status"] in ("HIT", "MISS")
 
     def test_server_timing_header(self, client):
         """Verify Server-Timing header is present and has valid format."""
-        response = client.get("/v1/health", headers={
-            "Authorization": "Bearer dev-api-key-change-me",
-            "X-Request-ID": "550e8400-e29b-41d4-a716-446655440000",
-            "X-Tenant-ID": f"test-tenant-{uuid.uuid4()}",
-        })
+        response = client.get(
+            "/v1/health",
+            headers={
+                "Authorization": "Bearer dev-api-key-change-me",
+                "X-Request-ID": "550e8400-e29b-41d4-a716-446655440000",
+                "X-Tenant-ID": f"test-tenant-{uuid.uuid4()}",
+            },
+        )
         assert response.status_code in (200, 503)
         assert "Server-Timing" in response.headers
         # Server-Timing should have format: name;dur=ms
@@ -95,12 +101,14 @@ class TestCrawlConfigRedactPII:
     def test_crawl_config_redact_pii_default_false(self):
         """redact_pii should default to False."""
         from app.models.crawl import CrawlConfig
+
         config = CrawlConfig(seed_urls=["https://example.com"])
         assert config.redact_pii is False
 
     def test_crawl_config_redact_pii_true(self):
         """redact_pii can be set to True."""
         from app.models.crawl import CrawlConfig
+
         config = CrawlConfig(
             seed_urls=["https://example.com"],
             redact_pii=True,
@@ -114,12 +122,14 @@ class TestScrapeRequestRedactPII:
     def test_scrape_request_redact_pii_default_false(self):
         """redact_pii should default to False."""
         from app.models.requests import ScrapeRequest
+
         req = ScrapeRequest(url="https://example.com")
         assert req.redact_pii is False
 
     def test_scrape_request_redact_pii_true(self):
         """redact_pii can be set to True."""
         from app.models.requests import ScrapeRequest
+
         req = ScrapeRequest(url="https://example.com", redact_pii=True)
         assert req.redact_pii is True
 
@@ -127,12 +137,12 @@ class TestScrapeRequestRedactPII:
 class TestOTelStructuredLogging:
     """Test OpenTelemetry structured logging with trace context."""
 
-
     def test_structured_formatter_output_is_json(self):
         """Formatter should produce valid JSON output."""
-        import json
         import io
+        import json
         import logging
+
         from app.services.otel_logging import OTelStructuredFormatter
 
         # Capture output
@@ -157,8 +167,9 @@ class TestOTelStructuredLogging:
 
     def test_otel_logging_configuration(self):
         """Verify logging configuration initializes correctly."""
-        from app.services.otel_logging import configure_structured_logging
         import logging
+
+        from app.services.otel_logging import configure_structured_logging
 
         configure_structured_logging("DEBUG")
         logger = logging.getLogger("test")

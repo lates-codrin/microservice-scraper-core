@@ -9,6 +9,7 @@ HTTP fetching service — async httpx client with:
 - SSRF defence — rejects RFC-1918/loopback/link-local addresses (422) on EVERY redirect hop
 - User-Agent from config
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -17,9 +18,9 @@ import logging
 import socket
 import time
 from dataclasses import dataclass, field
-from urllib.parse import urlparse, urljoin
-from urllib.robotparser import RobotFileParser
 from typing import TYPE_CHECKING
+from urllib.parse import urljoin, urlparse
+from urllib.robotparser import RobotFileParser
 
 import httpx
 
@@ -136,7 +137,7 @@ return 1
 """
 
 
-async def _redis_consume(redis: "Redis", domain: str, rate: float) -> bool:
+async def _redis_consume(redis: Redis, domain: str, rate: float) -> bool:
     result = await redis.eval(_BUCKET_LUA, 1, f"DOMAIN:rate:{domain}", str(rate), str(time.time()))  # type: ignore[attr-defined]
     return bool(result)
 
@@ -152,7 +153,9 @@ def _check_ssrf(hostname: str) -> None:
     try:
         infos = socket.getaddrinfo(hostname, None)
     except socket.gaierror as exc:
-        raise FetchError(f"DNS failed for '{hostname}': {exc}", code="upstream_error", status=502) from exc
+        raise FetchError(
+            f"DNS failed for '{hostname}': {exc}", code="upstream_error", status=502
+        ) from exc
     for *_, sockaddr in infos:
         try:
             addr = ipaddress.ip_address(sockaddr[0])
@@ -173,7 +176,7 @@ async def _get_robots(
     scheme: str,
     domain: str,
     user_agent: str,
-    redis: "Redis | None",
+    redis: Redis | None,
 ) -> RobotFileParser:
     key = f"DOMAIN:robots:{domain}"
     content = ""
@@ -222,7 +225,7 @@ async def fetch(
     max_pdf_size_mb: int = 50,
     respect_robots_txt: bool = True,
     max_requests_per_second: float = 1.0,
-    redis: "Redis | None" = None,
+    redis: Redis | None = None,
 ) -> FetchResult:
     """Fetch *url* applying all policy guards.
 
@@ -232,7 +235,9 @@ async def fetch(
     """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
-        raise FetchError(f"Unsupported scheme '{parsed.scheme}'", code="validation_error", status=422)
+        raise FetchError(
+            f"Unsupported scheme '{parsed.scheme}'", code="validation_error", status=422
+        )
 
     hostname = parsed.hostname or ""
     scheme = parsed.scheme
@@ -329,7 +334,9 @@ async def fetch(
                         warnings.append("pdf_too_large")
                         logger.warning(
                             "pdf_too_large: %s header %s bytes > %d limit",
-                            current_url, cl_hdr, max_pdf_bytes,
+                            current_url,
+                            cl_hdr,
+                            max_pdf_bytes,
                         )
                         elapsed = int((time.monotonic() - start) * 1000)
                         return FetchResult(
@@ -354,7 +361,8 @@ async def fetch(
                             warnings.append("pdf_too_large")
                             logger.warning(
                                 "pdf_too_large: %s exceeded %d MB mid-stream",
-                                current_url, max_pdf_size_mb,
+                                current_url,
+                                max_pdf_size_mb,
                             )
                             truncated = True
                             break

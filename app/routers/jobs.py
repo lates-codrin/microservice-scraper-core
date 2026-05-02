@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Job management endpoints ” GET, DELETE, cancel, documents."""
 
@@ -31,6 +31,7 @@ _FRESH_JOB_GRACE_SECONDS = 60
 def _is_valid_job_id(job_id: str) -> bool:
     return job_id.startswith(("cj_", "sj_"))
 
+
 # Mapping of non-terminal states to Retry-After header values.
 _RETRY_AFTER_BY_STATUS: dict[CrawlStatus, int] = {
     CrawlStatus.queued: RETRY_AFTER_QUEUED,
@@ -50,14 +51,10 @@ def _not_found(job_id: str, request_id: str) -> JSONResponse:
             request_id=request_id,
         )
     )
-    return JSONResponse(
-        status_code=404, content=payload.model_dump(mode="json")
-    )
+    return JSONResponse(status_code=404, content=payload.model_dump(mode="json"))
 
 
-@router.get(
-    "/{job_id}", response_model=CrawlJob, status_code=status.HTTP_200_OK
-)
+@router.get("/{job_id}", response_model=CrawlJob, status_code=status.HTTP_200_OK)
 async def get_job(
     job_id: str,
     request: Request,
@@ -74,13 +71,9 @@ async def get_job(
 
     if job.status == CrawlStatus.queued:
         if job.submitted_at is not None:
-            age_seconds = (
-                datetime.now(UTC) - job.submitted_at
-            ).total_seconds()
+            age_seconds = (datetime.now(UTC) - job.submitted_at).total_seconds()
             if age_seconds < _FRESH_JOB_GRACE_SECONDS:
-                job = job.model_copy(
-                    update={"status": CrawlStatus.queued, "completed_at": None}
-                )
+                job = job.model_copy(update={"status": CrawlStatus.queued, "completed_at": None})
 
     if (
         job.status == CrawlStatus.done
@@ -179,15 +172,11 @@ async def delete_job(
 ) -> Response:
     """Hard-delete a job and all its documents."""
     if not _is_valid_job_id(job_id):
-        raise HTTPException(
-            status_code=404, detail=f"Job '{job_id}' was not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Job '{job_id}' was not found.")
 
     job = await store.get(job_id)
     if job is None:
-        raise HTTPException(
-            status_code=404, detail=f"Job '{job_id}' was not found."
-        )
+        raise HTTPException(status_code=404, detail=f"Job '{job_id}' was not found.")
 
     if job.tenant_id != request.state.tenant_id:
         raise HTTPException(status_code=403, detail="Forbidden")

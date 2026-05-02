@@ -10,10 +10,10 @@ Covers:
  - OCR fallback warning
  - Password-protected PDF warning
 """
+
 from __future__ import annotations
 
 import asyncio
-import io
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -37,6 +37,7 @@ class TestRateLimitTokenBucket:
 
     def setup_method(self):
         from app.services.fetcher import _InProcessTokenBucket
+
         self.bucket = _InProcessTokenBucket()
 
     def test_first_request_allowed(self):
@@ -68,42 +69,54 @@ class TestSSRFRejection:
 
     def _check(self, hostname):
         from app.services.fetcher import _check_ssrf
+
         _check_ssrf(hostname)
 
     def test_loopback_ipv4(self):
         from app.services.fetcher import SSRFError
+
         with patch("socket.getaddrinfo", return_value=[(None, None, None, None, ("127.0.0.1", 0))]):
             with pytest.raises(SSRFError):
                 self._check("localhost")
 
     def test_rfc1918_10(self):
         from app.services.fetcher import SSRFError
+
         with patch("socket.getaddrinfo", return_value=[(None, None, None, None, ("10.0.0.1", 0))]):
             with pytest.raises(SSRFError):
                 self._check("internal.host")
 
     def test_rfc1918_172(self):
         from app.services.fetcher import SSRFError
-        with patch("socket.getaddrinfo", return_value=[(None, None, None, None, ("172.16.5.5", 0))]):
-            with pytest.raises(SSRFError):
-                self._check("docker.internal")
+
+        with patch(
+            "socket.getaddrinfo", return_value=[(None, None, None, None, ("172.16.5.5", 0))]
+        ), pytest.raises(SSRFError):
+            self._check("docker.internal")
 
     def test_rfc1918_192(self):
         from app.services.fetcher import SSRFError
-        with patch("socket.getaddrinfo", return_value=[(None, None, None, None, ("192.168.1.1", 0))]):
-            with pytest.raises(SSRFError):
-                self._check("router.local")
+
+        with patch(
+            "socket.getaddrinfo", return_value=[(None, None, None, None, ("192.168.1.1", 0))]
+        ), pytest.raises(SSRFError):
+            self._check("router.local")
 
     def test_link_local(self):
         from app.services.fetcher import SSRFError
-        with patch("socket.getaddrinfo", return_value=[(None, None, None, None, ("169.254.169.254", 0))]):
-            with pytest.raises(SSRFError):
-                self._check("metadata.google.internal")
+
+        with patch(
+            "socket.getaddrinfo", return_value=[(None, None, None, None, ("169.254.169.254", 0))]
+        ), pytest.raises(SSRFError):
+            self._check("metadata.google.internal")
 
     def test_public_ip_allowed(self):
         """Public IP must not raise."""
         from app.services.fetcher import _check_ssrf
-        with patch("socket.getaddrinfo", return_value=[(None, None, None, None, ("93.184.216.34", 0))]):
+
+        with patch(
+            "socket.getaddrinfo", return_value=[(None, None, None, None, ("93.184.216.34", 0))]
+        ):
             _check_ssrf("example.com")  # should not raise
 
 
@@ -111,14 +124,18 @@ class TestRobotsBlocking:
     """fetch() raises RobotsDisallowedError when robots.txt blocks the URL."""
 
     def test_robots_blocks_url(self):
-        from app.services.fetcher import fetch, RobotsDisallowedError
+        from app.services.fetcher import RobotsDisallowedError, fetch
 
         disallow_all = "User-agent: *\nDisallow: /"
 
         # Patch socket.getaddrinfo to return a public address
-        with patch("socket.getaddrinfo", return_value=[(None, None, None, None, ("93.184.216.34", 0))]):
+        with patch(
+            "socket.getaddrinfo", return_value=[(None, None, None, None, ("93.184.216.34", 0))]
+        ):
             # Patch _InProcessTokenBucket.consume to always allow
-            with patch("app.services.fetcher._local_buckets.consume", new=AsyncMock(return_value=True)):
+            with patch(
+                "app.services.fetcher._local_buckets.consume", new=AsyncMock(return_value=True)
+            ):
                 # Patch httpx.AsyncClient
                 mock_robots_resp = MagicMock()
                 mock_robots_resp.status_code = 200
@@ -134,11 +151,13 @@ class TestRobotsBlocking:
 
                 with patch("httpx.AsyncClient", return_value=mock_client):
                     with pytest.raises(RobotsDisallowedError):
-                        _run(fetch(
-                            "https://example.com/secret",
-                            respect_robots_txt=True,
-                            redis=None,
-                        ))
+                        _run(
+                            fetch(
+                                "https://example.com/secret",
+                                respect_robots_txt=True,
+                                redis=None,
+                            )
+                        )
 
     def test_robots_disabled_skips_check(self):
         """respect_robots_txt=False → no robots.txt fetch."""
@@ -146,35 +165,39 @@ class TestRobotsBlocking:
 
         disallow_all = "User-agent: *\nDisallow: /"
 
-        with patch("socket.getaddrinfo", return_value=[(None, None, None, None, ("93.184.216.34", 0))]):
-            with patch("app.services.fetcher._local_buckets.consume", new=AsyncMock(return_value=True)):
+        with patch(
+            "socket.getaddrinfo", return_value=[(None, None, None, None, ("93.184.216.34", 0))]
+        ), patch(
+            "app.services.fetcher._local_buckets.consume", new=AsyncMock(return_value=True)
+        ):
+            # Build a mock streaming response
+            mock_stream_ctx = AsyncMock()
+            mock_stream_ctx.__aenter__ = AsyncMock(return_value=mock_stream_ctx)
+            mock_stream_ctx.__aexit__ = AsyncMock(return_value=False)
+            mock_stream_ctx.status_code = 200
+            mock_stream_ctx.headers = {"content-type": "text/html"}
+            mock_stream_ctx.history = []
+            mock_stream_ctx.url = "https://example.com/"
 
-                # Build a mock streaming response
-                mock_stream_ctx = AsyncMock()
-                mock_stream_ctx.__aenter__ = AsyncMock(return_value=mock_stream_ctx)
-                mock_stream_ctx.__aexit__ = AsyncMock(return_value=False)
-                mock_stream_ctx.status_code = 200
-                mock_stream_ctx.headers = {"content-type": "text/html"}
-                mock_stream_ctx.history = []
-                mock_stream_ctx.url = "https://example.com/"
+            async def _iter_bytes():
+                yield b"<html>ok</html>"
 
-                async def _iter_bytes():
-                    yield b"<html>ok</html>"
+            mock_stream_ctx.aiter_bytes = _iter_bytes
 
-                mock_stream_ctx.aiter_bytes = _iter_bytes
+            mock_client = MagicMock()
+            mock_client.stream = MagicMock(return_value=mock_stream_ctx)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
 
-                mock_client = MagicMock()
-                mock_client.stream = MagicMock(return_value=mock_stream_ctx)
-                mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-                mock_client.__aexit__ = AsyncMock(return_value=False)
-
-                with patch("httpx.AsyncClient", return_value=mock_client):
-                    result = _run(fetch(
+            with patch("httpx.AsyncClient", return_value=mock_client):
+                result = _run(
+                    fetch(
                         "https://example.com/",
                         respect_robots_txt=False,
                         redis=None,
-                    ))
-                assert result.http_status == 200
+                    )
+                )
+            assert result.http_status == 200
 
 
 # ============================================================================
@@ -187,12 +210,14 @@ class TestDiacriticRoundTrip:
 
     def test_hotararea(self):
         from app.services.extractor import _assert_romanian_diacritics
+
         original = "Hotărârea privind bugetul"
         result = _assert_romanian_diacritics(original)
         assert result == original
 
     def test_timisoara_comma_below(self):
         from app.services.extractor import _assert_romanian_diacritics
+
         # ș = U+0219 comma-below, NOT ş = U+015F cedilla
         original = "Timi\u0219oara"
         result = _assert_romanian_diacritics(original)
@@ -201,6 +226,7 @@ class TestDiacriticRoundTrip:
 
     def test_cedilla_corrected_to_comma_below(self):
         from app.services.extractor import _assert_romanian_diacritics
+
         # Input uses wrong cedilla-ş, output must be comma-below-ș
         wrong = "Timi\u015foara"
         corrected = _assert_romanian_diacritics(wrong)
@@ -209,6 +235,7 @@ class TestDiacriticRoundTrip:
 
     def test_all_special_chars(self):
         from app.services.extractor import _assert_romanian_diacritics
+
         sample = "ă â î ș ț Ș Ț"
         result = _assert_romanian_diacritics(sample)
         # comma-below chars must be preserved, cedilla must not appear
@@ -223,6 +250,7 @@ class TestPDFExtraction:
         """Create a minimal in-memory PDF using fpdf2 if available, else use a fixture."""
         try:
             from fpdf import FPDF  # type: ignore[import-untyped]
+
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Helvetica", size=12)
@@ -240,6 +268,7 @@ class TestPDFExtraction:
 
         try:
             from fpdf import FPDF  # type: ignore
+
             pdf = FPDF()
             pdf.add_page()
             pdf.add_page()
@@ -250,6 +279,7 @@ class TestPDFExtraction:
             pytest.skip("fpdf2 not installed for PDF generation")
 
         from app.services.extractor import _extract_pdf
+
         result = _extract_pdf(pdf_bytes)
         assert result.page_count == 2
 
@@ -271,8 +301,10 @@ class TestPDFExtraction:
         except ImportError:
             pytest.skip("pytesseract not installed")
 
-        with patch("app.services.extractor.pdfplumber") as mock_pdfplumber, \
-             patch("app.services.extractor.pytesseract") as mock_tess:
+        with (
+            patch("app.services.extractor.pdfplumber") as mock_pdfplumber,
+            patch("app.services.extractor.pytesseract") as mock_tess,
+        ):
             mock_pdfplumber.open.return_value = mock_pdf
             mock_tess.image_to_string.return_value = "ocr text"
             result = extractor._extract_pdf(b"%PDF-fake")
@@ -293,17 +325,20 @@ class TestPDFExtraction:
     def test_content_hash_format(self):
         """content_hash must start with 'sha256:'."""
         from app.services.extractor import _extract_html
+
         result = _extract_html(b"<html><body>test</body></html>")
         assert result.content_hash.startswith("sha256:")
 
     def test_content_length_matches_raw_text(self):
         """content_length must equal len(raw_text)."""
         from app.services.extractor import _extract_html
+
         result = _extract_html(b"<html><body>Hello World</body></html>")
         assert result.content_length == len(result.raw_text)
 
     def test_language_always_ro(self):
-        from app.services.extractor import _extract_html, _extract_pdf
+        from app.services.extractor import _extract_html
+
         html_result = _extract_html(b"<html><body>text</body></html>")
         assert html_result.language == "ro"
 
@@ -318,6 +353,7 @@ class TestHTMLExtraction:
             pytest.skip("beautifulsoup4 not installed")
 
         from app.services.extractor import _extract_html
+
         html = b"<html><head><title>HCL 125/2024</title></head><body><p>text</p></body></html>"
         result = _extract_html(html)
         assert result.title == "HCL 125/2024"
@@ -329,10 +365,11 @@ class TestHTMLExtraction:
             pytest.skip("beautifulsoup4 not installed")
 
         from app.services.extractor import _extract_html
+
         html = (
-            b'<html><head>'
+            b"<html><head>"
             b'<link rel="canonical" href="https://exemplu.ro/hcl/125"/>'
-            b'</head><body><p>text</p></body></html>'
+            b"</head><body><p>text</p></body></html>"
         )
         result = _extract_html(html)
         assert result.canonical_url == "https://exemplu.ro/hcl/125"
@@ -344,6 +381,7 @@ class TestHTMLExtraction:
             pytest.skip("beautifulsoup4 not installed")
 
         from app.services.extractor import _extract_html
+
         html = b'<html><body><time datetime="2024-04-22T10:00:00">22 Apr 2024</time></body></html>'
         result = _extract_html(html)
         assert result.published_at == "2024-04-22"

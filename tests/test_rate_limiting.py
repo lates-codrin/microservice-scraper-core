@@ -16,7 +16,7 @@ _AUTH = "Bearer dev-api-key-change-me"
 def client():
     """Rate limit test client."""
     app = create_app()
-    yield TestClient(app)
+    return TestClient(app)
 
 
 def test_rate_limit_headers_present(client):
@@ -51,9 +51,7 @@ def test_rate_limit_counter_increments(client):
     )
     remaining1 = int(response1.headers["RateLimit-Remaining"])
 
-    response2 = client.get(
-        "/v1/health", headers={**headers, "X-Request-ID": "test-req-2"}
-    )
+    response2 = client.get("/v1/health", headers={**headers, "X-Request-ID": "test-req-2"})
     assert response2.status_code == 200, (
         f"Second request failed: {response2.status_code} {response2.text}"
     )
@@ -61,9 +59,7 @@ def test_rate_limit_counter_increments(client):
 
     # After the second request the bucket has one more hit, so remaining
     # must be strictly lower than after the first.
-    assert remaining2 < remaining1, (
-        f"Expected remaining to decrease: {remaining1} -> {remaining2}"
-    )
+    assert remaining2 < remaining1, f"Expected remaining to decrease: {remaining1} -> {remaining2}"
 
 
 def test_rate_limit_scoped_per_tenant(client):
@@ -91,8 +87,7 @@ def test_rate_limit_scoped_per_tenant(client):
     # Each tenant starts from the same full quota, so both should be equal
     # after exactly one request each (both at RATE_LIMIT - 1).
     assert remaining_a == remaining_b, (
-        "Different tenants should start from the same quota; "
-        f"got {remaining_a} vs {remaining_b}"
+        f"Different tenants should start from the same quota; got {remaining_a} vs {remaining_b}"
     )
     assert remaining_a >= 0
     assert remaining_b >= 0
@@ -116,14 +111,11 @@ def test_rate_limit_reset_header(client):
 
     # Reset must be in the future but no more than one full window away.
     assert reset_timestamp > current_time, "Reset timestamp must be in the future"
-    assert reset_timestamp <= current_time + 70, (
-        "Reset timestamp is unexpectedly far in the future"
-    )
+    assert reset_timestamp <= current_time + 70, "Reset timestamp is unexpectedly far in the future"
 
 
 def test_rate_limit_enforcement(client):
     """Requests beyond the quota receive HTTP 429."""
-    import os
     from app.middleware.rate_limit import RATE_LIMIT
 
     # This test only makes sense when the ceiling is reachable in a test run.
@@ -141,8 +133,6 @@ def test_rate_limit_enforcement(client):
         assert r.status_code == 200, f"Request {i} failed before limit was reached"
 
     # The very next request must be rejected.
-    over = client.get(
-        "/v1/health", headers={**headers, "X-Request-ID": "req-over"}
-    )
+    over = client.get("/v1/health", headers={**headers, "X-Request-ID": "req-over"})
     assert over.status_code == 429
     assert "Retry-After" in over.headers

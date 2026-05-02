@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 Edge-case tests:
@@ -10,6 +10,7 @@ Edge-case tests:
   - job that transitions queued  failed (worker crash simulation)
   - callback_url that returns a redirect  SSRF check on redirect target
 """
+
 from __future__ import annotations
 
 from uuid import uuid4
@@ -32,7 +33,7 @@ def _h(tenant: str = TENANT, ikey: str | None = None) -> dict:
     return h
 
 
-@pytest.fixture()
+@pytest.fixture
 def client():
     with TestClient(app) as c:
         yield c
@@ -85,7 +86,12 @@ def test_pagination_limit_zero_returns_422(client):
     """limit query param has ge=1; 0  422."""
     resp = client.post(
         "/v1/crawl",
-        json={"config": {"seed_urls": ["https://primaria-exemplu.ro"], "allowed_domains": ["primaria-exemplu.ro"]}},
+        json={
+            "config": {
+                "seed_urls": ["https://primaria-exemplu.ro"],
+                "allowed_domains": ["primaria-exemplu.ro"],
+            }
+        },
         headers=_h(ikey=str(uuid4())),
     )
     assert resp.status_code == 202
@@ -122,7 +128,12 @@ def test_cross_tenant_cursor_returns_403(client):
     """A cursor issued for tenant-A's job must 403 when tenant-B uses it."""
     resp = client.post(
         "/v1/crawl",
-        json={"config": {"seed_urls": ["https://primaria-exemplu.ro"], "allowed_domains": ["primaria-exemplu.ro"]}},
+        json={
+            "config": {
+                "seed_urls": ["https://primaria-exemplu.ro"],
+                "allowed_domains": ["primaria-exemplu.ro"],
+            }
+        },
         headers=_h(TENANT, ikey=str(uuid4())),
     )
     assert resp.status_code == 202
@@ -145,15 +156,22 @@ def test_cross_tenant_cursor_returns_403(client):
 
 def test_job_crash_queued_to_failed(client):
     """Simulate worker crash: force job status to 'failed' directly via DB."""
-    from app.models.enums import CrawlStatus
-    from app.models.db import DbCrawlJob
-    from sqlalchemy import update
-    import app.db as db_module
     import asyncio
+
+    from sqlalchemy import update
+
+    import app.db as db_module
+    from app.models.db import DbCrawlJob
+    from app.models.enums import CrawlStatus
 
     resp = client.post(
         "/v1/crawl",
-        json={"config": {"seed_urls": ["https://primaria-exemplu.ro"], "allowed_domains": ["primaria-exemplu.ro"]}},
+        json={
+            "config": {
+                "seed_urls": ["https://primaria-exemplu.ro"],
+                "allowed_domains": ["primaria-exemplu.ro"],
+            }
+        },
         headers=_h(ikey=str(uuid4())),
     )
     assert resp.status_code == 202
@@ -197,12 +215,11 @@ def test_job_crash_queued_to_failed(client):
 def test_webhook_callback_redirect_to_private_ip_blocked():
     """webhook delivery must not follow redirects to private IPs."""
     from unittest.mock import patch
-    from app.services.webhooks import _check_callback_ssrf, SSRFBlockedError
+
+    from app.services.webhooks import SSRFBlockedError, _check_callback_ssrf
 
     with patch(
         "socket.getaddrinfo",
         return_value=[(None, None, None, None, ("169.254.169.254", 0))],
-    ):
-        with pytest.raises(SSRFBlockedError):
-            _check_callback_ssrf("http://169.254.169.254/hook")
-
+    ), pytest.raises(SSRFBlockedError):
+        _check_callback_ssrf("http://169.254.169.254/hook")

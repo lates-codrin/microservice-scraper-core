@@ -1,10 +1,9 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Tests for webhook delivery: HMAC signing, retries, DLQ."""
 
 import hashlib
 import hmac
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -36,9 +35,7 @@ def mock_rabbitmq():
             async def __aexit__(self, exc_type, exc, tb):
                 pass
 
-        mock_queue.iterator = MagicMock(
-            return_value=MockIteratorContextManager()
-        )
+        mock_queue.iterator = MagicMock(return_value=MockIteratorContextManager())
 
         yield mock_conn, mock_connection, mock_channel, mock_queue, mock_dlx
 
@@ -68,9 +65,7 @@ def _make_payload(**overrides) -> WebhookPayload:
 
 @pytest.mark.asyncio
 async def test_webhook_worker_success(mock_rabbitmq, mock_httpx):
-    mock_conn, mock_connection, mock_channel, mock_queue, mock_dlx = (
-        mock_rabbitmq
-    )
+    mock_conn, mock_connection, mock_channel, mock_queue, mock_dlx = mock_rabbitmq
 
     payload = _make_payload()
     mock_msg = AsyncMock()
@@ -103,9 +98,7 @@ async def test_webhook_worker_success(mock_rabbitmq, mock_httpx):
     assert args[0] == "http://example.com/webhook"
 
     req_body = kwargs["content"]
-    expected_sig = hmac.new(
-        api_key.encode(), req_body.encode(), hashlib.sha256
-    ).hexdigest()
+    expected_sig = hmac.new(api_key.encode(), req_body.encode(), hashlib.sha256).hexdigest()
 
     assert kwargs["headers"][WEBHOOK_SIGNATURE_HEADER] == f"sha256={expected_sig}"
     assert kwargs["headers"]["Content-Type"] == "application/json"
@@ -114,9 +107,7 @@ async def test_webhook_worker_success(mock_rabbitmq, mock_httpx):
 
 @pytest.mark.asyncio
 async def test_webhook_worker_retry_on_failure(mock_rabbitmq, mock_httpx):
-    mock_conn, mock_connection, mock_channel, mock_queue, mock_dlx = (
-        mock_rabbitmq
-    )
+    mock_conn, mock_connection, mock_channel, mock_queue, mock_dlx = mock_rabbitmq
 
     payload = _make_payload()
     mock_msg = AsyncMock()
@@ -153,9 +144,7 @@ async def test_webhook_worker_retry_on_failure(mock_rabbitmq, mock_httpx):
 
 @pytest.mark.asyncio
 async def test_webhook_worker_dlq_after_3_failures(mock_rabbitmq, mock_httpx):
-    mock_conn, mock_connection, mock_channel, mock_queue, mock_dlx = (
-        mock_rabbitmq
-    )
+    mock_conn, mock_connection, mock_channel, mock_queue, mock_dlx = mock_rabbitmq
 
     payload = _make_payload()
     mock_msg = AsyncMock()
@@ -187,4 +176,3 @@ async def test_webhook_worker_dlq_after_3_failures(mock_rabbitmq, mock_httpx):
     mock_httpx.assert_called_once()
     mock_dlx.publish.assert_called_once()
     mock_msg.ack.assert_called_once()
-

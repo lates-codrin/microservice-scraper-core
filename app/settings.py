@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Application settings loaded from environment variables (twelve-factor)."""
 
@@ -43,9 +43,9 @@ def _env_bool(name: str, default_value: bool) -> bool:
 def _normalize_database_url(url: str) -> str:
     """Convert postgresql:// to postgresql+asyncpg:// for async driver."""
     if url.startswith("postgresql://"):
-        url = "postgresql+asyncpg://" + url[len("postgresql://"):]
+        url = "postgresql+asyncpg://" + url[len("postgresql://") :]
     elif url.startswith("postgres://"):
-        url = "postgresql+asyncpg://" + url[len("postgres://"):]
+        url = "postgresql+asyncpg://" + url[len("postgres://") :]
     # Strip sslmode from query string as asyncpg handles it differently
     if "?sslmode=" in url:
         url = url.split("?sslmode=")[0]
@@ -65,9 +65,7 @@ def load_settings() -> Settings:
         default_tenant_id=os.getenv("DEFAULT_TENANT_ID", "ph-balta-doamnei"),
         service_version=os.getenv("SERVICE_VERSION", "1.0.0"),
         active_workers=_env_int("ACTIVE_WORKERS", 4),
-        rabbitmq_url=os.getenv(
-            "RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"
-        ),
+        rabbitmq_url=os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
         database_url=database_url,
         redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
         docs_enabled=_env_bool("DOCS_ENABLED", True),
@@ -80,4 +78,3 @@ def load_settings() -> Settings:
 settings = load_settings()
 
 __all__ = ["Settings", "load_settings", "settings"]
-

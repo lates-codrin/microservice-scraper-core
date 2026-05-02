@@ -2,19 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Tests for extraction endpoint with all 18 doc_types."""
 
-import pytest
-from fastapi.testclient import TestClient
 import uuid
 
+import pytest
+from fastapi.testclient import TestClient
+
 from app.main import create_app
-from app.models.enums import DocType
 
 
 @pytest.fixture
 def client():
     """Extract test client."""
     app = create_app()
-    yield TestClient(app)
+    return TestClient(app)
 
 
 def test_extract_hcl_document(client):
@@ -27,7 +27,7 @@ def test_extract_hcl_document(client):
     împotrivă: 1
     abțineri: 0
     """
-    
+
     response = client.post(
         "/v1/extract",
         json={
@@ -35,9 +35,13 @@ def test_extract_hcl_document(client):
             "doc_type": "hcl",
             "schema": {},
         },
-        headers={"Authorization": "Bearer dev-api-key-change-me", "X-Request-ID": str(uuid.uuid4()), "X-Tenant-ID": "test-tenant-1"},
+        headers={
+            "Authorization": "Bearer dev-api-key-change-me",
+            "X-Request-ID": str(uuid.uuid4()),
+            "X-Tenant-ID": "test-tenant-1",
+        },
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "fields" in data
@@ -47,7 +51,7 @@ def test_extract_hcl_document(client):
 def test_extract_dispozitie_primar(client):
     """POST /v1/extract extracts Dispozitie fields."""
     content = "Disp. 15/2024 din data 01.04.2024"
-    
+
     response = client.post(
         "/v1/extract",
         json={
@@ -55,9 +59,13 @@ def test_extract_dispozitie_primar(client):
             "doc_type": "dispozitie_primar",
             "schema": {},
         },
-        headers={"Authorization": "Bearer dev-api-key-change-me", "X-Request-ID": str(uuid.uuid4()), "X-Tenant-ID": "test-tenant-2"},
+        headers={
+            "Authorization": "Bearer dev-api-key-change-me",
+            "X-Request-ID": str(uuid.uuid4()),
+            "X-Tenant-ID": "test-tenant-2",
+        },
     )
-    
+
     assert response.status_code == 200
 
 
@@ -68,7 +76,7 @@ def test_extract_buget(client):
     Venituri: 1.000.000 lei
     Cheltuieli: 950.000 RON
     """
-    
+
     response = client.post(
         "/v1/extract",
         json={
@@ -76,9 +84,13 @@ def test_extract_buget(client):
             "doc_type": "buget",
             "schema": {},
         },
-        headers={"Authorization": "Bearer dev-api-key-change-me", "X-Request-ID": str(uuid.uuid4()), "X-Tenant-ID": "test-tenant-3"},
+        headers={
+            "Authorization": "Bearer dev-api-key-change-me",
+            "X-Request-ID": str(uuid.uuid4()),
+            "X-Tenant-ID": "test-tenant-3",
+        },
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "fields" in data
@@ -87,7 +99,7 @@ def test_extract_buget(client):
 def test_extract_anunt_achizitie(client):
     """POST /v1/extract extracts Anunt Achizitie fields."""
     content = "Valoarea contractului: 50.000 lei"
-    
+
     response = client.post(
         "/v1/extract",
         json={
@@ -95,9 +107,13 @@ def test_extract_anunt_achizitie(client):
             "doc_type": "anunt_achizitie",
             "schema": {},
         },
-        headers={"Authorization": "Bearer dev-api-key-change-me", "X-Request-ID": str(uuid.uuid4()), "X-Tenant-ID": "test-tenant-4"},
+        headers={
+            "Authorization": "Bearer dev-api-key-change-me",
+            "X-Request-ID": str(uuid.uuid4()),
+            "X-Tenant-ID": "test-tenant-4",
+        },
     )
-    
+
     assert response.status_code == 200
 
 
@@ -109,7 +125,7 @@ def test_extract_strategie(client):
     Obiectiv 2: Creșterea economică
     Obiectiv 3: Dezvoltare socială
     """
-    
+
     response = client.post(
         "/v1/extract",
         json={
@@ -117,9 +133,13 @@ def test_extract_strategie(client):
             "doc_type": "strategie",
             "schema": {},
         },
-        headers={"Authorization": "Bearer dev-api-key-change-me", "X-Request-ID": str(uuid.uuid4()), "X-Tenant-ID": "test-tenant-5"},
+        headers={
+            "Authorization": "Bearer dev-api-key-change-me",
+            "X-Request-ID": str(uuid.uuid4()),
+            "X-Tenant-ID": "test-tenant-5",
+        },
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "fields" in data
@@ -133,7 +153,7 @@ def test_extract_proces_verbal(client):
     Punct 2: Decizie în privința achizițiilor
     Punct 3: Anunțul public de angajare
     """
-    
+
     response = client.post(
         "/v1/extract",
         json={
@@ -141,9 +161,13 @@ def test_extract_proces_verbal(client):
             "doc_type": "proces_verbal",
             "schema": {},
         },
-        headers={"Authorization": "Bearer dev-api-key-change-me", "X-Request-ID": str(uuid.uuid4()), "X-Tenant-ID": "test-tenant-6"},
+        headers={
+            "Authorization": "Bearer dev-api-key-change-me",
+            "X-Request-ID": str(uuid.uuid4()),
+            "X-Tenant-ID": "test-tenant-6",
+        },
     )
-    
+
     assert response.status_code == 200
 
 
@@ -169,9 +193,9 @@ def test_extract_all_doctypes(client):
         "declaratie_avere",
         "other",
     ]
-    
+
     test_content = "Test document content with some 2024 data"
-    
+
     for doc_type in doc_types:
         response = client.post(
             "/v1/extract",
@@ -180,9 +204,13 @@ def test_extract_all_doctypes(client):
                 "doc_type": doc_type,
                 "schema": {},
             },
-            headers={"Authorization": "Bearer dev-api-key-change-me", "X-Request-ID": str(uuid.uuid4()), "X-Tenant-ID": f"test-tenant-all-{doc_type}"},
+            headers={
+                "Authorization": "Bearer dev-api-key-change-me",
+                "X-Request-ID": str(uuid.uuid4()),
+                "X-Tenant-ID": f"test-tenant-all-{doc_type}",
+            },
         )
-        
+
         assert response.status_code == 200, f"Failed for doc_type: {doc_type}"
         data = response.json()
         assert "fields" in data

@@ -3,6 +3,7 @@ Data integrity tests:
   - content_hash in the DB must equal sha256(raw_text) for every stored document.
   - Pytest fixture that verifies this constraint after every document write.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -10,8 +11,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.services.extractor import _sha256, _extract_html, _extract_pdf
-
+from app.services.extractor import _extract_html, _extract_pdf, _sha256
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixture: verify content_hash after every document write
@@ -41,7 +41,7 @@ def content_hash_verifier(monkeypatch):
         return await original_add(self, job_id, tenant_id, doc)
 
     monkeypatch.setattr(js_module.JobStore, "add_document", patched_add)
-    yield
+    return
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -72,8 +72,12 @@ class TestContentHashIntegrity:
 
     def test_different_texts_have_different_hashes(self):
         # Use sufficiently distinct content that trafilatura won't collapse both to empty
-        r1 = _extract_html(b"<html><body><article><p>Hotararea nr. 125 privind aprobarea bugetului local pe anul 2024 a fost adoptata.</p></article></body></html>")
-        r2 = _extract_html(b"<html><body><article><p>Dispozitia primarului nr. 42 din 15 martie 2024 privind organizarea evenimentului.</p></article></body></html>")
+        r1 = _extract_html(
+            b"<html><body><article><p>Hotararea nr. 125 privind aprobarea bugetului local pe anul 2024 a fost adoptata.</p></article></body></html>"
+        )
+        r2 = _extract_html(
+            b"<html><body><article><p>Dispozitia primarului nr. 42 din 15 martie 2024 privind organizarea evenimentului.</p></article></body></html>"
+        )
         # If both extract to empty (trafilatura minimum text threshold), the test is meaningless.
         # Fall back to _sha256 direct comparison in that case.
         if r1.raw_text and r2.raw_text:
@@ -91,7 +95,7 @@ class TestContentHashIntegrity:
 
     def test_pdf_extraction_hash_matches(self):
         """Password-protected PDF (empty raw_text) still has correct hash."""
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import patch
 
         with patch("app.services.extractor.pdfplumber") as mock_pdfplumber:
             mock_pdfplumber.open.side_effect = Exception("password required")
@@ -110,11 +114,12 @@ class TestContentHashIntegrity:
 async def test_add_document_hash_verified_by_fixture():
     """The autouse fixture must not raise for a correct content_hash."""
     import fakeredis
+
     import app.db as db_module
-    from app.services.job_store import JobStore
+    from app.models.crawl import CrawlConfig
     from app.models.document import ScrapedDocument
     from app.models.enums import ContentType, DocType
-    from app.models.crawl import CrawlConfig
+    from app.services.job_store import JobStore
 
     # Use the real PostgreSQL session (NullPool, patched by conftest)
     redis_client = fakeredis.FakeRedis(decode_responses=True)
@@ -166,11 +171,12 @@ async def test_add_document_hash_verified_by_fixture():
 async def test_add_document_tampered_hash_caught_by_fixture():
     """The autouse fixture must raise AssertionError when hash is tampered."""
     import fakeredis
+
     import app.db as db_module
-    from app.services.job_store import JobStore
+    from app.models.crawl import CrawlConfig
     from app.models.document import ScrapedDocument
     from app.models.enums import ContentType, DocType
-    from app.models.crawl import CrawlConfig
+    from app.services.job_store import JobStore
 
     redis_client = fakeredis.FakeRedis(decode_responses=True)
 

@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """POST /v1/scrape ” single-URL scrape endpoint."""
 
@@ -38,9 +38,7 @@ async def scrape_url(
             request_payload=payload.model_dump(mode="json"),
         )
         queued = AsyncJobResponse(job_id=job_id, status="queued")
-        return JSONResponse(
-            status_code=202, content=queued.model_dump(mode="json")
-        )
+        return JSONResponse(status_code=202, content=queued.model_dump(mode="json"))
 
     try:
         document, latency_ms = await execute_sync_scrape(
@@ -51,9 +49,7 @@ async def scrape_url(
             redis_client=request.app.state.redis,
         )
     except FetchError as exc:
-        raise HTTPException(
-            status_code=exc.status, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=exc.status, detail=str(exc)) from exc
 
     return ScrapeResponse(
         request_id=request.state.request_id,

@@ -75,7 +75,10 @@ class MetricsCollector:
     def render_prometheus(self) -> str:
         """Render metrics in Prometheus exposition format."""
         with self._lock:
-            lines = ["# HELP http_requests_total Total HTTP requests", "# TYPE http_requests_total counter"]
+            lines = [
+                "# HELP http_requests_total Total HTTP requests",
+                "# TYPE http_requests_total counter",
+            ]
             for (method, status, endpoint), count in self._http_requests_total.items():
                 lines.append(
                     f'http_requests_total{{method="{method}",status="{status}",'
@@ -84,7 +87,11 @@ class MetricsCollector:
 
             lines.append("# HELP http_request_duration_seconds HTTP request latency")
             lines.append("# TYPE http_request_duration_seconds histogram")
-            for (method, status, endpoint), durations in self._http_request_duration_seconds.items():
+            for (
+                method,
+                status,
+                endpoint,
+            ), durations in self._http_request_duration_seconds.items():
                 if durations:
                     p50 = sorted(durations)[len(durations) // 2]
                     p95 = sorted(durations)[int(len(durations) * 0.95)]
@@ -108,8 +115,12 @@ class MetricsCollector:
 
             lines.append("# HELP vendor_tokens_total Total tokens consumed")
             lines.append("# TYPE vendor_tokens_total counter")
-            lines.append(f'vendor_tokens_total{{direction="input"}} {self._vendor_tokens_total["input"]}')
-            lines.append(f'vendor_tokens_total{{direction="output"}} {self._vendor_tokens_total["output"]}')
+            lines.append(
+                f'vendor_tokens_total{{direction="input"}} {self._vendor_tokens_total["input"]}'
+            )
+            lines.append(
+                f'vendor_tokens_total{{direction="output"}} {self._vendor_tokens_total["output"]}'
+            )
 
             lines.append("# HELP vendor_external_api_errors_total External API errors")
             lines.append("# TYPE vendor_external_api_errors_total counter")

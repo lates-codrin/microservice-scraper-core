@@ -20,9 +20,7 @@ def _ensure_parameter_refs(operation: dict[str, object], names: list[str]) -> No
         return
 
     existing_refs = {
-        param.get("$ref")
-        for param in parameters
-        if isinstance(param, dict) and "$ref" in param
+        param.get("$ref") for param in parameters if isinstance(param, dict) and "$ref" in param
     }
     for name in names:
         ref = f"#/components/parameters/{name}"
@@ -35,7 +33,9 @@ def _apply_openapi_overrides(spec: dict[str, object]) -> None:
     # Info
     info = spec.setdefault("info", {})
     if isinstance(info, dict):
-        info["description"] = """HTTP contract between the Lex-Advisor platform (caller) and any external
+        info[
+            "description"
+        ] = """HTTP contract between the Lex-Advisor platform (caller) and any external
 Scraper service (provider). Scraper discovers, fetches, and normalizes
 documents from Romanian cityhall (primărie) websites so they can be
 indexed by the RAG layer.

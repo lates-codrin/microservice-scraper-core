@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 Security test suite:
@@ -7,6 +7,7 @@ Security test suite:
   - Header injection: newline in X-Tenant-ID must return 400
   - Tenant isolation: every endpoint must return 403 for cross-tenant access
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -43,7 +44,7 @@ CRAWL_PAYLOAD = {
 }
 
 
-@pytest.fixture()
+@pytest.fixture
 def client():
     with TestClient(app) as c:
         yield c
@@ -62,7 +63,7 @@ class TestSSRFRedirectChain:
 
     def test_redirect_to_metadata_endpoint_blocked(self):
         """A 301 redirect to http://169.254.169.254/ must be blocked with SSRFError."""
-        from app.services.fetcher import fetch, SSRFError
+        from app.services.fetcher import SSRFError, fetch
 
         def dns_side_effect(hostname, port=None):
             mapping = {
@@ -98,48 +99,45 @@ class TestSSRFRedirectChain:
         robots_mock.__aenter__ = AsyncMock(return_value=robots_mock)
         robots_mock.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("socket.getaddrinfo", side_effect=dns_side_effect):
-            with patch("app.services.fetcher._local_buckets.consume", new=AsyncMock(return_value=True)):
-                with patch("httpx.AsyncClient", side_effect=[robots_mock, mock_client]):
-                    with pytest.raises(SSRFError) as exc_info:
-                        self._run(
-                            fetch(
-                                "https://evil.example.com/",
-                                respect_robots_txt=False,
-                                redis=None,
-                            )
-                        )
+        with patch("socket.getaddrinfo", side_effect=dns_side_effect), patch(
+            "app.services.fetcher._local_buckets.consume", new=AsyncMock(return_value=True)
+        ), patch("httpx.AsyncClient", side_effect=[robots_mock, mock_client]):
+            with pytest.raises(SSRFError) as exc_info:
+                self._run(
+                    fetch(
+                        "https://evil.example.com/",
+                        respect_robots_txt=False,
+                        redis=None,
+                    )
+                )
         assert "169.254.169.254" in str(exc_info.value)
 
     def test_direct_link_local_blocked(self):
-        from app.services.fetcher import _check_ssrf, SSRFError
+        from app.services.fetcher import SSRFError, _check_ssrf
 
         with patch(
             "socket.getaddrinfo",
             return_value=[(None, None, None, None, ("169.254.169.254", 0))],
-        ):
-            with pytest.raises(SSRFError):
-                _check_ssrf("169.254.169.254")
+        ), pytest.raises(SSRFError):
+            _check_ssrf("169.254.169.254")
 
     def test_rfc1918_10_blocked(self):
-        from app.services.fetcher import _check_ssrf, SSRFError
+        from app.services.fetcher import SSRFError, _check_ssrf
 
         with patch(
             "socket.getaddrinfo",
             return_value=[(None, None, None, None, ("10.1.2.3", 0))],
-        ):
-            with pytest.raises(SSRFError):
-                _check_ssrf("internal.corp")
+        ), pytest.raises(SSRFError):
+            _check_ssrf("internal.corp")
 
     def test_loopback_blocked(self):
-        from app.services.fetcher import _check_ssrf, SSRFError
+        from app.services.fetcher import SSRFError, _check_ssrf
 
         with patch(
             "socket.getaddrinfo",
             return_value=[(None, None, None, None, ("127.0.0.1", 0))],
-        ):
-            with pytest.raises(SSRFError):
-                _check_ssrf("localhost")
+        ), pytest.raises(SSRFError):
+            _check_ssrf("localhost")
 
     def test_public_ip_allowed(self):
         from app.services.fetcher import _check_ssrf
@@ -158,24 +156,22 @@ class TestSSRFRedirectChain:
 
 class TestWebhookSSRF:
     def test_private_callback_blocked(self):
-        from app.services.webhooks import _check_callback_ssrf, SSRFBlockedError
+        from app.services.webhooks import SSRFBlockedError, _check_callback_ssrf
 
         with patch(
             "socket.getaddrinfo",
             return_value=[(None, None, None, None, ("10.0.0.1", 0))],
-        ):
-            with pytest.raises(SSRFBlockedError):
-                _check_callback_ssrf("http://internal.corp/hook")
+        ), pytest.raises(SSRFBlockedError):
+            _check_callback_ssrf("http://internal.corp/hook")
 
     def test_metadata_callback_blocked(self):
-        from app.services.webhooks import _check_callback_ssrf, SSRFBlockedError
+        from app.services.webhooks import SSRFBlockedError, _check_callback_ssrf
 
         with patch(
             "socket.getaddrinfo",
             return_value=[(None, None, None, None, ("169.254.169.254", 0))],
-        ):
-            with pytest.raises(SSRFBlockedError):
-                _check_callback_ssrf("http://169.254.169.254/latest/meta-data/")
+        ), pytest.raises(SSRFBlockedError):
+            _check_callback_ssrf("http://169.254.169.254/latest/meta-data/")
 
     def test_public_callback_allowed(self):
         from app.services.webhooks import _check_callback_ssrf
@@ -201,30 +197,41 @@ class TestHeaderInjection:
 
     def test_safe_slug_rejects_newline(self):
         from app.middleware.auth_headers import _SAFE_SLUG_RE
+
         assert _SAFE_SLUG_RE.match("tenant\r\nX-Injected: evil") is None
 
     def test_safe_slug_rejects_cr(self):
         from app.middleware.auth_headers import _SAFE_SLUG_RE
+
         assert _SAFE_SLUG_RE.match("tenant\rvalue") is None
 
     def test_safe_slug_rejects_null(self):
         from app.middleware.auth_headers import _SAFE_SLUG_RE
+
         assert _SAFE_SLUG_RE.match("tenant\x00value") is None
 
     def test_safe_slug_accepts_normal(self):
         from app.middleware.auth_headers import _SAFE_SLUG_RE
+
         assert _SAFE_SLUG_RE.match("ph-balta-doamnei") is not None
 
     def test_safe_slug_accepts_uuid(self):
         from app.middleware.auth_headers import _SAFE_SLUG_RE
+
         assert _SAFE_SLUG_RE.match(str(uuid4())) is not None
 
     def test_header_injection_request_id_returns_400(self, client):
-        resp = client.get("/v1/health", headers={"X-Request-ID": "123\nInject: true", "X-Tenant-ID": "test-tenant"})
+        resp = client.get(
+            "/v1/health",
+            headers={"X-Request-ID": "123\nInject: true", "X-Tenant-ID": "test-tenant"},
+        )
         assert resp.status_code == 400
 
     def test_header_injection_tenant_id_returns_400(self, client):
-        resp = client.get("/v1/health", headers={"X-Request-ID": str(uuid4()), "X-Tenant-ID": "test\nInject: true"})
+        resp = client.get(
+            "/v1/health",
+            headers={"X-Request-ID": str(uuid4()), "X-Tenant-ID": "test\nInject: true"},
+        )
         assert resp.status_code == 400
 
 

@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 Crawl runner ” background worker process.
@@ -23,11 +23,11 @@ Cancellation
 Between message pulls the runner checks whether the job's DB status
 has been externally set to `cancelled` and stops gracefully.
 """
+
 from __future__ import annotations
 
 import asyncio
 import logging
-import time
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -36,21 +36,20 @@ import redis as redis_lib
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.constants import JOB_ID_PREFIX_CRAWL
+from app.constants import JOB_ID_PREFIX_CRAWL, REDIS_PREFIX_JOB_KNOWN_HASHES
 from app.db import async_session_maker
-from app.models.crawl import CrawlConfig, CrawlProgress, CrawlStats
+from app.models.crawl import CrawlConfig, CrawlProgress
 from app.models.db import DbCrawlJob, DbScrapedDocument
-from app.models.enums import ContentType, CrawlStatus, DocType
+from app.models.enums import CrawlStatus
 from app.services.browser import render_page
 from app.services.classifier import classify_document
 from app.services.extractor import extract
 from app.services.fetcher import FetchError, fetch
 from app.services.frontier import Frontier, FrontierConfig
 from app.services.mime_utils import content_type_from_mime
+from app.services.pii_redactor import redact_pii as redact_pii_text
 from app.services.webhooks import WebhookPayload, publish_webhook
 from app.settings import settings
-from app.constants import REDIS_PREFIX_JOB_KNOWN_HASHES
-from app.services.pii_redactor import redact_pii as redact_pii_text
 
 logger = logging.getLogger(__name__)
 
@@ -108,21 +107,16 @@ async def _set_job_status(
     error: dict | None = None,
 ) -> None:
     values: dict = {"status": status.value}
-    if status in (CrawlStatus.done, CrawlStatus.failed,
-                   CrawlStatus.cancelled, CrawlStatus.partial):
+    if status in (CrawlStatus.done, CrawlStatus.failed, CrawlStatus.cancelled, CrawlStatus.partial):
         values["completed_at"] = datetime.now(UTC)
     if error:
         values["error"] = error
-    await session.execute(
-        update(DbCrawlJob).where(DbCrawlJob.job_id == job_id).values(**values)
-    )
+    await session.execute(update(DbCrawlJob).where(DbCrawlJob.job_id == job_id).values(**values))
     await session.commit()
 
 
 async def _is_cancelled(session: AsyncSession, job_id: str) -> bool:
-    result = await session.execute(
-        select(DbCrawlJob.status).where(DbCrawlJob.job_id == job_id)
-    )
+    result = await session.execute(select(DbCrawlJob.status).where(DbCrawlJob.job_id == job_id))
     row = result.scalar_one_or_none()
     return row == CrawlStatus.cancelled.value
 
@@ -164,9 +158,7 @@ async def _persist_document(
             # On redis errors, fall back to normal persist
             pass
 
-    doc_type, doc_type_confidence, _ = classify_document(
-        doc.get("final_url"), raw_text
-    )
+    doc_type, doc_type_confidence, _ = classify_document(doc.get("final_url"), raw_text)
 
     db_doc = DbScrapedDocument(
         document_id=f"d_{uuid4().hex[:12]}",
@@ -294,11 +286,8 @@ async def run_job(
         render_javascript=config.render_javascript.value
         if hasattr(config.render_javascript, "value")
         else str(config.render_javascript),
-        sitemap_hint_url=str(config.sitemap_hint_url)
-        if config.sitemap_hint_url
-        else None,
-        user_agent=config.user_agent
-        or "LexAdvisor-Bot/1.0 (+https://lex-advisor.citydock.ro/bot)",
+        sitemap_hint_url=str(config.sitemap_hint_url) if config.sitemap_hint_url else None,
+        user_agent=config.user_agent or "LexAdvisor-Bot/1.0 (+https://lex-advisor.citydock.ro/bot)",
         max_requests_per_second=config.max_requests_per_second,
         respect_robots_txt=config.respect_robots_txt,
         max_pdf_size_mb=config.max_pdf_size_mb,
@@ -361,13 +350,11 @@ async def run_job(
                         queue.get(timeout=_QUEUE_DRAIN_TIMEOUT),
                         timeout=_QUEUE_DRAIN_TIMEOUT + 1,
                     )
-                except (asyncio.TimeoutError, aio_pika.exceptions.QueueEmpty):
+                except (TimeoutError, aio_pika.exceptions.QueueEmpty):
                     empty_streak += 1
                     if empty_streak >= 2:
                         # Queue has been empty for two consecutive polls  done
-                        logger.info(
-                            "job=%s queue drained (docs=%d)", job_id, docs_saved
-                        )
+                        logger.info("job=%s queue drained (docs=%d)", job_id, docs_saved)
                         break
                     await asyncio.sleep(1)
                     continue
@@ -410,18 +397,14 @@ async def run_job(
                                 session, job_id, redis, CrawlStatus.crawling
                             )
                     except FetchError as exc:
-                        logger.warning(
-                            "job=%s fetch error for message: %s", job_id, exc
-                        )
+                        logger.warning("job=%s fetch error for message: %s", job_id, exc)
                         # Don't abort whole job on individual URL failures
 
         # â”€â”€ Phase 3: finalize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         await channel.close()
 
         async with async_session_maker() as session:
-            await _update_progress_from_redis(
-                session, job_id, redis, terminal_status
-            )
+            await _update_progress_from_redis(session, job_id, redis, terminal_status)
 
         logger.info(
             "job=%s finished status=%s docs=%d",
@@ -534,4 +517,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

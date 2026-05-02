@@ -10,24 +10,26 @@ Auth headers are injected per-case via the `headers` parameter.
 The schema is loaded from the YAML file; the ASGI app is reached via
 a thin requests.Session wrapper that routes to starlette's TestClient.
 """
+
 from __future__ import annotations
 
 import uuid
+from datetime import UTC
 from pathlib import Path
 from unittest.mock import AsyncMock
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 import pytest
 import requests
 import schemathesis
-from hypothesis import settings as hypothesis_settings, HealthCheck
+from hypothesis import HealthCheck
+from hypothesis import settings as hypothesis_settings
 from schemathesis.specs.openapi.checks import ignored_auth as _ignored_auth_check
 from starlette.testclient import TestClient
 
 from app.dependencies import get_job_store
 from app.main import app
 from app.settings import settings
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Thin wrapper: route schemathesis requests → starlette TestClient
@@ -84,9 +86,7 @@ class _ASGISession(requests.Session):
         tc_kwargs: dict = {}
         if prepared.body is not None:
             tc_kwargs["content"] = (
-                prepared.body
-                if isinstance(prepared.body, bytes)
-                else prepared.body.encode()
+                prepared.body if isinstance(prepared.body, bytes) else prepared.body.encode()
             )
         if prepared.headers:
             tc_kwargs["headers"] = dict(prepared.headers)
@@ -96,11 +96,15 @@ class _ASGISession(requests.Session):
         if method_fn is None:
             # Stub a minimal 405 response without hitting the TestClient
             _ = path_url  # keep for symmetry
-            raw_resp = type("_Stub", (), {
-                "status_code": 405,
-                "content": b'{"detail":"Method Not Allowed"}',
-                "headers": {"content-type": "application/json"},
-            })()
+            raw_resp = type(
+                "_Stub",
+                (),
+                {
+                    "status_code": 405,
+                    "content": b'{"detail":"Method Not Allowed"}',
+                    "headers": {"content-type": "application/json"},
+                },
+            )()
         else:
             try:
                 raw_resp = method_fn(path_url, **tc_kwargs)
@@ -111,11 +115,15 @@ class _ASGISession(requests.Session):
                 try:
                     raw_resp = method_fn(path_url, **tc_kwargs)
                 except Exception:
-                    raw_resp = type("_Stub", (), {
-                        "status_code": 405,
-                        "content": b'{"detail":"Method Not Allowed"}',
-                        "headers": {"content-type": "application/json"},
-                    })()
+                    raw_resp = type(
+                        "_Stub",
+                        (),
+                        {
+                            "status_code": 405,
+                            "content": b'{"detail":"Method Not Allowed"}',
+                            "headers": {"content-type": "application/json"},
+                        },
+                    )()
         header_dict = dict(raw_resp.headers)
 
         # Convert to requests.Response
@@ -165,11 +173,12 @@ _BASE_URL = "http://testserver"
 
 @pytest.fixture(autouse=True)
 def mock_dependencies():
-    from app.models.crawl import CrawlJob, CrawlConfig, CrawlProgress, CrawlStats
-    from datetime import datetime, timezone
+    from datetime import datetime
+
+    from app.models.crawl import CrawlConfig, CrawlJob, CrawlProgress, CrawlStats
 
     mock_store = AsyncMock()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     mock_job = CrawlJob(
         job_id="cj_123",
         tenant_id="test-tenant",
@@ -255,7 +264,9 @@ def test_api_contract(case):
     path = (case.path or "").rstrip("/")
     is_public = path in ("/v1/health", "/v1/openapi.json")
     if not is_public:
-        assert "x-request-id" in response.headers, f"Missing x-request-id in {list(response.headers.keys())}"
+        assert "x-request-id" in response.headers, (
+            f"Missing x-request-id in {list(response.headers.keys())}"
+        )
     assert "ratelimit-limit" in response.headers
     assert "ratelimit-remaining" in response.headers
     assert "ratelimit-reset" in response.headers

@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Scrape endpoint integration test with mocked services."""
 
@@ -11,8 +11,8 @@ from fastapi.testclient import TestClient
 
 from app.dependencies import get_job_store
 from app.main import app
-from app.models.enums import ContentType, DocType
 from app.models.document import ScrapedDocument
+from app.models.enums import ContentType, DocType
 from app.services.extractor import ExtractionResult
 from app.services.fetcher import FetchResult
 
@@ -63,7 +63,10 @@ def test_scrape_sync_fetches_extracts_and_persists(monkeypatch):
         "app.services.scrape_service.render_page",
         AsyncMock(return_value=(fetch_result.content, fetch_result.final_url, False)),
     )
-    monkeypatch.setattr("app.services.scrape_service.extract", lambda content, mime_type, source_url: extraction_result)
+    monkeypatch.setattr(
+        "app.services.scrape_service.extract",
+        lambda content, mime_type, source_url: extraction_result,
+    )
     monkeypatch.setattr(
         "app.services.scrape_service.classify_document",
         lambda url, text: (DocType.hcl, 0.94, [{"doc_type": DocType.buget, "confidence": 0.3}]),

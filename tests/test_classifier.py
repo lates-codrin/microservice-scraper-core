@@ -1,7 +1,7 @@
-import pytest
+from app.models.enums import DocType
 from app.services.classifier import classify_document
 from app.services.field_extractor import extract_hcl_fields
-from app.models.enums import DocType
+
 
 def test_classifier_all_slugs():
     # 18 slugs, URL match mostly, plus some keywords
@@ -29,6 +29,7 @@ def test_classifier_all_slugs():
         dtype, conf, alts = classify_document(url, text)
         assert dtype == expected_type
         assert conf == expected_conf
+
 
 def test_extract_hcl():
     text = "Hotararea nr. 125/2024 din 22.04.2024 privind aprobarea bugetului local.\nVoturi: pentru: 13, \u00eempotriv\u0103: 2, ab\u021bineri: 1."

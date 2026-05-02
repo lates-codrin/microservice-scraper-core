@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Centralised constants ” no magic numbers or strings elsewhere in app/."""
 
@@ -95,9 +95,7 @@ FETCHER_DEFAULT_MAX_PDF_SIZE_MB: int = 50
 ROBOTS_TTL_SECONDS: int = 3_600
 
 # Default User-Agent string.
-DEFAULT_USER_AGENT: str = (
-    "LexAdvisor-Bot/1.0 (+https://lex-advisor.citydock.ro/bot)"
-)
+DEFAULT_USER_AGENT: str = "LexAdvisor-Bot/1.0 (+https://lex-advisor.citydock.ro/bot)"
 
 # ---------------------------------------------------------------------------
 # Browser pool
@@ -213,4 +211,3 @@ __all__ = [
     "WEBHOOK_RETRY_DELAYS",
     "WEBHOOK_SIGNATURE_HEADER",
 ]
-

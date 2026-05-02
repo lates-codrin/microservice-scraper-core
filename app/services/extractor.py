@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 Content extraction service.
@@ -24,6 +24,7 @@ Universal:
   - content_length = len(raw_text)
   - language = "ro"
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -151,7 +152,9 @@ def _extract_html(content: bytes, source_url: str = "") -> ExtractionResult:
     raw_text = ""
     if trafilatura is not None:
         try:
-            raw_text = trafilatura.extract(content, include_comments=False, include_tables=True) or ""
+            raw_text = (
+                trafilatura.extract(content, include_comments=False, include_tables=True) or ""
+            )
         except Exception as exc:
             logger.warning("trafilatura failed for %s: %s", source_url, exc)
     else:
@@ -273,7 +276,6 @@ def _extract_pdf(content: bytes) -> ExtractionResult:
         except Exception as exc:
             logger.warning("OCR fallback failed: %s", exc)
 
-
     raw_text = _normalize(raw_text)
     content_hash = _sha256(raw_text)
     return ExtractionResult(
@@ -391,4 +393,3 @@ def extract(content: bytes, mime_type: str, source_url: str = "") -> ExtractionR
 
     # Default: HTML
     return _extract_html(content, source_url)
-

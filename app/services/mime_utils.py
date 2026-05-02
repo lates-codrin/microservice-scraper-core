@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """MIME type  ContentType mapping utility."""
 
@@ -30,4 +30,3 @@ def content_type_from_mime(mime_type: str) -> ContentType:
 
 
 __all__ = ["content_type_from_mime"]
-

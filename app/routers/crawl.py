@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """POST /v1/crawl ” initiate a multi-URL crawl job."""
 
@@ -61,9 +61,7 @@ async def start_crawl(
                 details={"existing_job_id": exc.existing_job_id},
             )
         )
-        return JSONResponse(
-            status_code=409, content=envelope.model_dump(mode="json")
-        )
+        return JSONResponse(status_code=409, content=envelope.model_dump(mode="json"))
 
     return CrawlAcceptedResponse(
         job_id=job.job_id,

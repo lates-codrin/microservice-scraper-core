@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 
 # Configurable via environment so tests can raise the ceiling without
 # touching production defaults.
-RATE_LIMIT = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))   # requests per window
+RATE_LIMIT = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))  # requests per window
 RATE_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))  # seconds
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Redis-backed sliding-window rate limiting, scoped per tenant."""

@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """Persistent job store backed by PostgreSQL + Redis."""
 
@@ -77,9 +77,7 @@ class JobStore:
     ) -> CrawlJob:
         """Create a new crawl job with idempotency protection."""
         idem_key = f"{REDIS_PREFIX_IDEMPOTENCY}:{tenant_id}:{idempotency_key}"
-        idem_fp_key = (
-            f"{REDIS_PREFIX_IDEMPOTENCY_FINGERPRINT}:{tenant_id}:{idempotency_key}"
-        )
+        idem_fp_key = f"{REDIS_PREFIX_IDEMPOTENCY_FINGERPRINT}:{tenant_id}:{idempotency_key}"
 
         # Atomic SET NX guarantees exactly-once job creation
         won_race = self.redis.set(
@@ -91,10 +89,7 @@ class JobStore:
         if not won_race:
             for _attempt in range(IDEMPOTENCY_RACE_POLL_ATTEMPTS):
                 existing_job_id = self.redis.get(idem_key)
-                if (
-                    existing_job_id
-                    and existing_job_id != IDEMPOTENCY_PENDING_SENTINEL
-                ):
+                if existing_job_id and existing_job_id != IDEMPOTENCY_PENDING_SENTINEL:
                     stored_fp = self.redis.get(idem_fp_key)
                     if stored_fp and stored_fp != request_fingerprint:
                         raise DuplicateJobError(
@@ -124,13 +119,10 @@ class JobStore:
                 urls_pending=0,
                 bytes_downloaded=0,
             ).model_dump(),
-            stats=CrawlStats(
-                by_doc_type={"other": 0}, http_errors={}
-            ).model_dump(),
+            stats=CrawlStats(by_doc_type={"other": 0}, http_errors={}).model_dump(),
             config=config.model_dump(mode="json"),
             submitted_at=now,
-            estimated_completion_at=now
-            + timedelta(minutes=ESTIMATED_CRAWL_COMPLETION_MINUTES),
+            estimated_completion_at=now + timedelta(minutes=ESTIMATED_CRAWL_COMPLETION_MINUTES),
             callback_url=str(callback_url) if callback_url else None,
         )
 
@@ -148,13 +140,14 @@ class JobStore:
             )
 
         result = await self.get(job_id)
-        assert result is not None  # noqa: S101 ” just-created job must exist
+        assert result is not None
         return result
 
     async def create_scrape_job(
         self,
         tenant_id: str,
         request_payload: dict[str, Any] | None = None,
+        status: CrawlStatus = CrawlStatus.queued,
     ) -> str:
         """Create a lightweight single-URL scrape job."""
         job_id = f"{JOB_ID_PREFIX_SCRAPE}{uuid4().hex[:12]}"
@@ -162,7 +155,7 @@ class JobStore:
         db_job = DbCrawlJob(
             job_id=job_id,
             tenant_id=tenant_id,
-            status=CrawlStatus.queued.value,
+            status=status.value,
             progress=CrawlProgress(
                 stage=CrawlStatus.queued.value,
                 urls_discovered=0,
@@ -172,13 +165,10 @@ class JobStore:
                 urls_pending=0,
                 bytes_downloaded=0,
             ).model_dump(),
-            stats=CrawlStats(
-                by_doc_type={"other": 0}, http_errors={}
-            ).model_dump(),
+            stats=CrawlStats(by_doc_type={"other": 0}, http_errors={}).model_dump(),
             config=request_payload,
             submitted_at=now,
-            estimated_completion_at=now
-            + timedelta(seconds=ESTIMATED_SCRAPE_COMPLETION_SECONDS),
+            estimated_completion_at=now + timedelta(seconds=ESTIMATED_SCRAPE_COMPLETION_SECONDS),
         )
         self.session.add(db_job)
         await self.session.commit()
@@ -240,16 +230,17 @@ class JobStore:
             current_job = await self.get(job_id)
             if current_job is None:
                 return None
-            try:
-                validate_transition(job_id, current_job.status, status)
-            except InvalidTransitionError:
-                logger.warning(
-                    "Rejected transition %s  %s for job %s",
-                    current_job.status.value,
-                    status.value,
-                    job_id,
-                )
-                raise
+            if current_job.status != status:
+                try:
+                    validate_transition(job_id, current_job.status, status)
+                except InvalidTransitionError:
+                    logger.warning(
+                        "Rejected transition %s  %s for job %s",
+                        current_job.status.value,
+                        status.value,
+                        job_id,
+                    )
+                    raise
 
         values: dict[str, Any] = {}
         if status:
@@ -261,9 +252,7 @@ class JobStore:
                     JOB_RETENTION_TTL_SECONDS,
                     "1",
                 )
-            elif status == CrawlStatus.failed:
-                values["completed_at"] = datetime.now(UTC)
-            elif status == CrawlStatus.cancelled:
+            elif status == CrawlStatus.failed or status == CrawlStatus.cancelled:
                 values["completed_at"] = datetime.now(UTC)
         if progress:
             values["progress"] = progress.model_dump()
@@ -287,9 +276,7 @@ class JobStore:
 
     async def delete(self, job_id: str) -> bool:
         """Hard-delete a job and its documents."""
-        result = await self.session.execute(
-            delete(DbCrawlJob).where(DbCrawlJob.job_id == job_id)
-        )
+        result = await self.session.execute(delete(DbCrawlJob).where(DbCrawlJob.job_id == job_id))
         await self.session.commit()
         return result.rowcount > 0
 
@@ -336,19 +323,13 @@ class JobStore:
         if self.redis.exists(f"{REDIS_PREFIX_JOB_EXPIRED}:{job_id}"):
             from fastapi import HTTPException
 
-            raise HTTPException(
-                status_code=410, detail="Job results have expired"
-            )
+            raise HTTPException(status_code=410, detail="Job results have expired")
 
-        stmt = select(DbScrapedDocument).where(
-            DbScrapedDocument.job_id == job_id
-        )
+        stmt = select(DbScrapedDocument).where(DbScrapedDocument.job_id == job_id)
         if doc_type:
             stmt = stmt.where(DbScrapedDocument.doc_type == doc_type)
         if min_confidence > 0:
-            stmt = stmt.where(
-                DbScrapedDocument.doc_type_confidence >= min_confidence
-            )
+            stmt = stmt.where(DbScrapedDocument.doc_type_confidence >= min_confidence)
 
         # Opaque cursor: base64-encoded offset integer
         offset = 0
@@ -368,9 +349,7 @@ class JobStore:
         has_more = len(rows) > limit
         if has_more:
             rows = rows[:limit]
-            next_cursor = base64.b64encode(
-                str(offset + limit).encode()
-            ).decode()
+            next_cursor = base64.b64encode(str(offset + limit).encode()).decode()
         else:
             next_cursor = None
 
@@ -413,23 +392,17 @@ class JobStore:
             job_id=job_id,
             tenant_id=tenant_id,
             source_url=str(document.source_url),
-            canonical_url=(
-                str(document.canonical_url) if document.canonical_url else None
-            ),
+            canonical_url=(str(document.canonical_url) if document.canonical_url else None),
             mime_type=document.mime_type,
             content_type=document.content_type.value,
             raw_text=document.raw_text,
             raw_html=document.raw_html,
-            binary_url=(
-                str(document.binary_url) if document.binary_url else None
-            ),
+            binary_url=(str(document.binary_url) if document.binary_url else None),
             doc_type=document.doc_type.value,
             doc_type_confidence=document.doc_type_confidence,
             title=document.title,
             language=document.language,
-            published_at=(
-                str(document.published_at) if document.published_at else None
-            ),
+            published_at=(str(document.published_at) if document.published_at else None),
             page_count=document.page_count,
             content_length=document.content_length,
             content_hash=document.content_hash,
@@ -461,10 +434,10 @@ class JobStore:
 
     async def delete_jobs_before(self, cutoff_dt: datetime) -> int:
         """Delete jobs and documents created before cutoff datetime (GDPR compliance).
-        
+
         Args:
             cutoff_dt: Delete jobs with submitted_at before this time
-            
+
         Returns:
             Number of job records deleted
         """
@@ -475,16 +448,15 @@ class JobStore:
             )
         )
         await self.session.execute(stmt)
-        
+
         # Delete jobs
         stmt = delete(DbCrawlJob).where(DbCrawlJob.submitted_at < cutoff_dt)
         result = await self.session.execute(stmt)
         deleted = result.rowcount
-        
+
         await self.session.commit()
         logger.info("Log retention: deleted %d jobs before %s", deleted, cutoff_dt)
         return deleted
 
 
 __all__ = ["DuplicateJobError", "JobStore"]
-

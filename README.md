@@ -88,14 +88,49 @@ curl -X POST http://localhost:8080/v1/scrape \
 
 ## Testing
 
+### Quick Start
+
 ```bash
-# Full suite via Docker
+# Full suite via Docker (all services + migrations included)
 docker compose run test
 
-# Local
+# Local — requires PostgreSQL, Redis, and RabbitMQ on localhost:5432/6379/5672
 pytest tests -v
+```
 
-# Lint + type check
+### Running Without Workers
+
+The `docker compose up` command also starts crawl and scrape workers that consume jobs from RabbitMQ. This can cause race conditions in job-lifecycle tests (e.g. a worker picks up the job before the test asserts `queued`). To run tests in isolation, start only the infrastructure services:
+
+```bash
+docker compose up -d postgres redis rabbitmq
+pytest tests -v
+```
+
+### Unit vs Integration Tests
+
+The suite uses pytest markers to separate tests that need real infrastructure from tests that run with mocked dependencies:
+
+| Marker | Requires | Command |
+|---|---|---|
+| (none) | Nothing — mocked services, no DB/Redis | `pytest -m "not integration" -v` |
+| `integration` | Real PostgreSQL, Redis, and `NullPool` DB engine | `pytest -m integration -v` |
+
+```bash
+# Unit tests only (fast, no infrastructure needed)
+pytest -m "not integration" -v
+
+# Integration tests only (needs PostgreSQL + Redis)
+pytest tests/integration/ -v
+# or equivalently:
+pytest -m integration -v
+```
+
+Integration tests exercise the full middleware → router → service → database stack. The only layer mocked is the outbound HTTP/Playwright fetch — the extractor (trafilatura/pdfplumber), classifier (rule-based, 18 doc types), and field extractor all run real.
+
+### Lint & Type Check
+
+```bash
 ruff check app/
 mypy --strict app/
 ```

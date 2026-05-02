@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
+# Copyright 2026 Lates Codrin-Gabriel (https://github.com/lates-codrin)
 # SPDX-License-Identifier: Apache-2.0 WITH Commons-Clause-1.0
 """
 Browser rendering service ” async Playwright Chromium pool.
@@ -14,6 +14,7 @@ render_javascript modes:
 
 include_raw_html=True  attach post-render HTML to result.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -40,6 +41,7 @@ def _looks_like_spa(html_bytes: bytes) -> bool:
             return True
     # Check <div id="root"></div> with no children (empty root)
     import re
+
     pattern = rb'<div\s+id=["\']root["\'][^>]*>\s*</div>'
     if re.search(pattern, html_bytes, re.IGNORECASE):
         return True
@@ -167,4 +169,3 @@ async def render_page(
     # Looks like SPA (or no bytes given)  Playwright
     result = await _pool.render(url, timeout_ms=timeout_ms, user_agent=user_agent)
     return (result.html, result.url, True)
-

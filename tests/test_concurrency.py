@@ -4,6 +4,7 @@ Concurrency test: 20 concurrent POST /v1/crawl requests for the same tenant.
 - No DB deadlocks
 - Redis counters are consistent
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -11,7 +12,6 @@ from uuid import uuid4
 
 import httpx
 import pytest
-import pytest_asyncio
 from httpx import ASGITransport
 
 from app.main import app
@@ -34,6 +34,7 @@ async def test_20_concurrent_crawl_no_duplicates():
     transport = ASGITransport(app=app)
 
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
+
         async def _post() -> tuple[int, str | None]:
             ikey = str(uuid4())
             resp = await ac.post(
@@ -69,6 +70,7 @@ async def test_idempotency_same_key_concurrent():
     ikey = str(uuid4())
 
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
+
         async def _post() -> tuple[int, str | None]:
             resp = await ac.post(
                 "/v1/crawl",

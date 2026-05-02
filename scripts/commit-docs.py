@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import subprocess
 import os
+import subprocess
 
 os.chdir("/vercel/share/v0-project")
 
@@ -37,8 +37,7 @@ Dependencies:
 - Add scalar-rs for interactive API documentation
 - Add openapi-spec-validator for spec validation"""
 
-result = subprocess.run(["git", "commit", "-m", commit_message], 
-                       capture_output=True, text=True)
+result = subprocess.run(["git", "commit", "-m", commit_message], capture_output=True, text=True)
 
 if result.returncode == 0:
     print("[v0] Git commit successful")
@@ -49,7 +48,6 @@ else:
     print(result.stderr)
 
 # Show latest commit
-result = subprocess.run(["git", "log", "--oneline", "-1"], 
-                       capture_output=True, text=True)
+result = subprocess.run(["git", "log", "--oneline", "-1"], capture_output=True, text=True)
 print("[v0] Latest commit:")
 print(result.stdout)
