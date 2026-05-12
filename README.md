@@ -17,7 +17,11 @@
 <br/>
 
 <p align="center">
-  <img width="1920" height="953" alt="demo" src="https://github.com/user-attachments/assets/ffa5aa75-0bb1-410a-9313-20baa8010d3e" />
+  <img
+    src="https://github.com/user-attachments/assets/ffa5aa75-0bb1-410a-9313-20baa8010d3e"
+    alt="demo"
+    style="width: 100%; max-width: 1200px; height: auto;"
+  />
 </p>
 
 <br/>
